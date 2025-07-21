@@ -20,7 +20,7 @@ where we have the following problem variables and data:
 
 | **$n$ Block Variables** | **$m$ Block Constraints** | **Block Matrix of $m\times n$ Linear Operators** |
 |:---:|:---:|:---:|
-| $\mathbf{x} = [x_1, x_2, \ldots, x_n]^{\top}$ | $\mathbf{b} = [b_1, b_2, \ldots, b_m]^{\top}$ | $\mathbf{A} = [\mathbf{A}_{i,j}]_{i=1,\ldots,m; j=1,\ldots,n}$ |
+| $\mathbf{x} = [x_1, x_2, \cdots, x_n]^{\top}$ | $\mathbf{b} = [b_1, b_2, \cdots, b_m]^{\top}$ | $\mathbf{A} = [\mathbf{A}_{i,j}]_{i=1,\cdots,m; j=1,\cdots,n}$ |
 
 More specifically, 
 - For each $j\in \{1,\cdots,n\}$, a `BlockVariable` $x_j$ represents a numeric array (i.e., scalar, vector, matrix, etc.), and is associated with two objective functions: 
