@@ -1,0 +1,40 @@
+# Julia
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+deps/deps.jl
+deps/builds.log
+deps/downloads/
+
+# Keep Manifest.toml files for reproducible builds and documentation
+# Root Manifest.toml: commit for reproducible CI and development
+# docs/Manifest.toml: commit for reproducible documentation builds
+
+# Documentation builds
+docs/build/
+docs/site/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Local environment
+.env
+local/ 
