@@ -18,40 +18,20 @@
 ```
 where we have the following problem variables and data:
 
-<div align="center">
-
-<table>
-<tr>
-<th><b><i>n</i> Block Variables</b></th>
-<th><b><i>m</i> Block Constraints</b></th>
-<th><b>Block Matrix of <i>m</i> by <i>n</i> Linear Operators</b></th>
-</tr>
-<tr>
-<td align="center">
-
+**Block Variables ($n$ blocks):**
 ```math
 \mathbf{x} = \begin{bmatrix} x_1 \\ x_2 \\ \vdots \\ x_n \end{bmatrix}
 ```
 
-</td>
-<td align="center">
-
+**Block Constraints ($m$ blocks):**
 ```math
 \mathbf{b} = \begin{bmatrix} b_1 \\ b_2 \\ \vdots \\ b_m \end{bmatrix}
 ```
 
-</td>
-<td align="center">
-
+**Block Matrix ($m$ by $n$ Linear Operators):**
 ```math
 \mathbf{A} = \begin{bmatrix} \mathbf{A}_{1,1} & \mathbf{A}_{1,2} & \cdots & \mathbf{A}_{1,n} \\ \mathbf{A}_{2,1} & \mathbf{A}_{2,2} & \cdots & \mathbf{A}_{2,n} \\ \vdots & \vdots & \ddots & \vdots \\ \mathbf{A}_{m,1} & \mathbf{A}_{m,2} & \cdots & \mathbf{A}_{m,n} \end{bmatrix}
 ```
-
-</td>
-</tr>
-</table>
-
-</div>
 
 More specifically, 
 - For each $j\in \{1,\cdots,n\}$, a `BlockVariable` $x_j$ represents a numeric array (i.e., scalar, vector, matrix, etc.), and is associated with two objective functions: 
