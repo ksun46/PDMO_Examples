@@ -219,7 +219,7 @@ block.val = zeros(3)                     # initial value
 
 ## Documentation
 
-For comprehensive documentation, examples, and API references, visit our [full documentation](docs/src/index.md).
+For comprehensive documentation, examples, and API references, visit our [full documentation](https://alibaba-damo-academy.github.io/PDMO.jl).
 
 
 ## Roadmap (Work in Progress)
