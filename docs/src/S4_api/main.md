@@ -1,12 +1,10 @@
-# Main API
+# Main Interface
 
-This page documents the main API interface for PDMO.jl.
+This page documents the main solver interfaces and high-level functions in PDMO.jl.
 
-## Core Functions
+## Main Solver Functions
 
-The main entry points for using PDMO.jl:
-
-- `solve!` - Primary function for solving optimization problems using PDMO algorithms
-- Additional solver interfaces and utilities
-
-> **Note**: Detailed API documentation with function signatures and examples will be added in a future release.
+```@docs
+runBipartiteADMM
+runAdaPDM
+```

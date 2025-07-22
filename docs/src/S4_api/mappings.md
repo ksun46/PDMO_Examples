@@ -1,49 +1,49 @@
-# Mappings
+# Mappings API
 
-This page documents the linear mapping components in PDMO.jl for representing linear operators between variable blocks.
+This document describes the mappings available in the optimization framework.
 
-## Overview
+## Abstract Mapping Interface
 
-PDMO.jl provides efficient implementations of linear mappings that connect different variable blocks in multiblock optimization problems.
+```@docs
+AbstractMapping
+```
 
-## Abstract Base Type
+## Interface Functions
 
-- `AbstractMapping` - Base abstract type for all linear mappings
+All mapping types implement function call operators:
+- `(L::ConcreteMapping)(x::NumericVariable)` - Out-of-place application
+- `(L::ConcreteMapping)(x::NumericVariable, ret::NumericVariable, add::Bool = false)` - In-place application
 
-## Linear Mapping Types
+All mapping types implement adjoint operators that extend Julia's `adjoint` and `adjoint!` functions:
+- `adjoint!(L::ConcreteMapping, y::NumericVariable, ret::NumericVariable, add::Bool = false)` - In-place adjoint
+- `adjoint(L::ConcreteMapping, y::NumericVariable)` - Out-of-place adjoint
 
-Core linear mapping implementations:
+```@docs
+operatorNorm2
+```
+## Basic Mapping Types
 
-- `LinearMappingMatrix` - Dense matrix representation of linear operators
-- `LinearMappingIdentity` - Identity mapping for efficiency
-- `LinearMappingExtraction` - Extraction/selection mappings for subsets of variables
+### NullMapping
 
-## Mapping Operations
+```@docs
+NullMapping
+```
 
-Standard operations supported by all mappings:
+### LinearMappingIdentity
 
-- Forward application: `A * x` (matrix-vector multiplication)
-- Adjoint application: `A' * y` (adjoint/transpose operation)
-- Composition: combining multiple mappings
-- Scaling: scalar multiplication of mappings
+```@docs
+LinearMappingIdentity
+```
 
-## Efficient Implementations
+### LinearMappingExtraction
 
-Specialized implementations for common cases:
+```@docs
+LinearMappingExtraction
+```
 
-- Sparse matrix support for large-scale problems
-- Identity mappings with O(1) storage
-- Block-diagonal structures
-- Extraction operators for variable selection
+### LinearMappingMatrix
 
-## Integration with Block Structure
-
-How mappings work within the multiblock framework:
-
-- Connecting variable blocks to constraint blocks
-- Automatic adjoint computation
-- Memory-efficient storage and computation
-- Support for both dense and sparse representations
-
-> **Note**: Detailed API documentation with function signatures and examples will be added in a future release.
+```@docs
+LinearMappingMatrix
+```
 

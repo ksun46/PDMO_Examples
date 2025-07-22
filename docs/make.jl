@@ -1,14 +1,16 @@
 using Documenter
+using PDMO  # Now safe to load with conditional dependencies
 
-# Build documentation without loading PDMO package to avoid dependency issues
+# Build documentation with automatic docstring extraction
 makedocs(
     sitename = "PDMO.jl Documentation",
     authors = "PDMO.jl contributors",
-    repo = "https://github.com/alibaba-damo-academy/PDMO.jl",
+    repo = Documenter.Remotes.GitHub("alibaba-damo-academy", "PDMO.jl"),
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://alibaba-damo-academy.github.io/PDMO.jl/",
-        edit_link = "main"
+        edit_link = "main",
+        repolink = "https://github.com/alibaba-damo-academy/PDMO.jl"
     ),
     pages = [
         "Home" => "index.md",

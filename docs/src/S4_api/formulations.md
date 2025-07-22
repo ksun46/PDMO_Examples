@@ -1,52 +1,103 @@
-# Formulations
+**Formulations**
 
-This page documents the problem formulation components in PDMO.jl for defining optimization problems.
+This page documents the problem formulation utilities in PDMO.jl.
 
-## Overview
+**Core Data Types**
 
-PDMO.jl provides a flexible framework for formulating multiblock optimization problems with block variables, constraints, and linear operators.
+*Block Components*
 
-## Block Components
+```@docs
+BlockID
+BlockVariable
+BlockConstraint
+MultiblockProblem
+```
 
-Core building blocks for multiblock problems:
+*Block Component Functions*
 
-- `BlockVariable` - Represents a block of optimization variables
-- `BlockConstraint` - Represents a constraint involving multiple variable blocks
+```@docs
+addBlockVariable!
+addBlockConstraint!
+checkBlockVariableValidity
+checkBlockConstraintValidity
+checkMultiblockProblemValidity
+checkMultiblockProblemFeasibility
+checkCompositeProblemValidity!
+```
 
-## Problem Representation
+**Graph Formulations**
 
-Main structures for defining optimization problems:
+*Graph Data Types*
 
-- `MultiblockProblem` - Core problem representation with multiple variable blocks
-- `MultiblockGraph` - Graph representation of problem structure showing variable-constraint relationships
+```@docs
+MultiblockGraph
+NodeType
+EdgeType
+Node
+Edge
+```
 
-## JuMP Integration
+*Graph Construction Functions*
 
-Integration with JuMP.jl for modeling:
+```@docs
+createNodeID
+createEdgeID
+```
 
-- `MultiblockProblemJuMP` - Interface between JuMP models and multiblock problems
-- Automatic extraction of block structure from JuMP models
+*Graph Analysis Functions*
 
-## Problem Transformation
+```@docs
+numberNodes
+numberEdges
+numberEdgesByTypes
+getNodelNeighbors
+isMultiblockGraphBipartite
+isMultiblockGraphConnected
+```
 
-Utilities for problem preprocessing and transformation:
+**Bipartization Algorithms**
 
-- `MultiblockProblemScaling` - Automatic scaling of variables and constraints
-- Problem transformation utilities for improved numerical stability
+*Bipartization Types*
 
-## Graph Algorithms
+```@docs
+BipartizationAlgorithm
+BfsBipartization
+MilpBipartization
+DfsBipartization
+SpanningTreeBipartization
+```
 
-Specialized algorithms for multiblock problem graphs:
+*Bipartization Functions*
 
-- `BipartizationAlgorithms` - Algorithms for converting general graphs to bipartite form
-- `ADMMBipartiteGraph` - Bipartite graph representation optimized for ADMM algorithms
+```@docs
+getBipartizationAlgorithmName
+```
 
-## Graph Analysis
+**ADMM Bipartite Graph**
 
-Tools for analyzing problem structure:
+*ADMM Data Types*
 
-- Graph connectivity analysis
-- Block decomposition strategies
-- Computational complexity estimation
+```@docs
+ADMMBipartiteGraph
+ADMMNode
+ADMMEdge
+```
 
-> **Note**: Detailed API documentation with function signatures and examples will be added in a future release.
+*ADMM Construction Functions*
+
+```@docs
+createADMMNodeID
+createADMMEdgeID
+```
+
+**JuMP Interface**
+
+*JuMP Interface Functions*
+
+```@docs
+solveMultiblockProblemByJuMP
+isSupportedObjectiveFunction
+isSupportedProximalFunction
+unwrapFunction
+addBlockVariableToJuMPModel!
+```

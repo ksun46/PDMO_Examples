@@ -8,14 +8,22 @@ using FilePathsBase
 using Logging 
 using Base.Threads 
 using Test
-using Ipopt
 using DataStructures
 using Random
 Random.seed!(126)
 
 import Printf
-import HiGHS
-import JuMP
+
+# Conditional loading of heavy solver dependencies
+const SOLVERS_AVAILABLE = try
+    using Ipopt
+    import HiGHS
+    import JuMP
+    true
+catch e
+    @warn "PDMO: Heavy solver dependencies (Ipopt, HiGHS, JuMP) not available. Some functionality will be limited." exception=e
+    false
+end
 
 const norm = LinearAlgebra.norm 
 const opnorm = LinearAlgebra.opnorm
