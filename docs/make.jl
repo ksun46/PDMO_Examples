@@ -22,10 +22,10 @@ end
 makedocs(
     sitename = "PDMO.jl Documentation",
     authors = "PDMO.jl contributors",
-    repo = "https://github.com/alibaba-damo-academy/primal-dual-methods-for-optimization.jl",
+    repo = "https://github.com/alibaba-damo-academy/PDMO.jl",
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", "false") == "true",
-        canonical = "https://alibaba-damo-academy.github.io/primal-dual-methods-for-optimization.jl/",
+        canonical = "https://alibaba-damo-academy.github.io/PDMO.jl/",
         assets = ["assets/tikz-support.css"],
         edit_link = "main"
     ),
@@ -57,7 +57,7 @@ makedocs(
 
 # Deploy documentation to GitHub Pages
 deploydocs(
-    repo = "github.com/alibaba-damo-academy/primal-dual-methods-for-optimization.jl.git",
+    repo = "github.com/alibaba-damo-academy/PDMO.jl.git",
     push_preview = true,
     devbranch = "main"
 ) 
