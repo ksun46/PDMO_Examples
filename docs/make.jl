@@ -1,24 +1,7 @@
-using Documenter, TikzPictures
-
-# Load all required packages first
-using LinearAlgebra, SparseArrays, Printf, Random, Logging, Dates
-using JuMP, Arpack, DataFrames, DataStructures, JSON, MathOptInterface
-using HiGHS, Ipopt, FileIO, FilePathsBase, Metis, CodecZlib
+using Documenter
 using PDMO
 
-# Add the parent directory to the load path so Julia can find the PDMO package
-push!(LOAD_PATH, "../")
-
-# Try to load the PDMO package
-try
-    using PDMO
-    @info "Successfully loaded PDMO package for automatic docstring extraction"
-catch e
-    @error "Failed to load PDMO package: $e"
-    @info "Documentation will build with empty @docs blocks"
-end
-
-# Build documentation with automatic docstring extraction
+# Build documentation with minimal dependencies
 makedocs(
     sitename = "PDMO.jl Documentation",
     authors = "PDMO.jl contributors",
@@ -26,31 +9,29 @@ makedocs(
     format = Documenter.HTML(
         prettyurls = get(ENV, "CI", "false") == "true",
         canonical = "https://alibaba-damo-academy.github.io/PDMO.jl/",
-        assets = ["assets/tikz-support.css"],
         edit_link = "main"
     ),
     pages = [
         "Home" => "index.md",
         "Getting Started" => "S1_getting_started.md",
         "Algorithms" => [
-            "ADMM" => "S2_algorithms/ADMM.md",
-            "AdaPDM" => "S2_algorithms/AdaPDM.md"
+            "AdaPDM" => "S2_algorithms/AdaPDM.md",
+            "ADMM" => "S2_algorithms/ADMM.md"
         ],
         "Examples" => [
-            "Least L1 Norm" => "S3_examples/LeastL1Norm.md",
-            "Fused Lasso" => "S3_examples/FusedLasso.md",
+            "Distributed OPF" => "S3_examples/DistributedOPF.md",
             "Dual Lasso" => "S3_examples/DualLasso.md",
             "Dual SVM" => "S3_examples/DualSVM.md",
-            "Distributed OPF" => "S3_examples/DistributedOPF.md"
+            "Fused Lasso" => "S3_examples/FusedLasso.md",
+            "Least L1 Norm" => "S3_examples/LeastL1Norm.md"
         ],
         "API Reference" => [
-            "Main Algorithm Interface" => "S4_api/main.md"
-            , "Functions" => "S4_api/functions.md"
-            , "Mappings" => "S4_api/mappings.md"
-            , "Formulations" => "S4_api/formulations.md"
-            , "ADMM Components" => "S4_api/admm.md"
-            , "AdaPDM Components" => "S4_api/pdm.md"
-            # , "Utilities" => "S4_api/utilities.md"
+            "Main" => "S4_api/main.md",
+            "Formulations" => "S4_api/formulations.md",
+            "Functions" => "S4_api/functions.md",
+            "Mappings" => "S4_api/mappings.md", 
+            "ADMM" => "S4_api/admm.md",
+            "AdaPDM" => "S4_api/pdm.md"
         ]
     ]
 )
