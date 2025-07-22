@@ -1,6 +1,5 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-PDMO = "a4a9b704-c4ea-42b1-9c22-741827d51956"
 
 [compat]
 Documenter = "1"

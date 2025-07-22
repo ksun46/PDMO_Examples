@@ -29,16 +29,13 @@ jobs:
         shell: julia --project=docs --color=yes {0}
         run: |
           using Pkg
-          Pkg.develop(PackageSpec(path=pwd()))
+          # Only instantiate docs environment, don't develop main package
           Pkg.instantiate()
-      - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-docdeploy@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Run doctests
+      - name: Build documentation
         shell: julia --project=docs --color=yes {0}
         run: |
-          using Documenter: DocMeta, doctest
-          using PDMO
-          DocMeta.setdocmeta!(PDMO, :DocTestSetup, :(using PDMO); recursive=true)
-          doctest(PDMO) 
+          # Add main package path to LOAD_PATH for importing
+          push!(LOAD_PATH, "../src")
+          include("make.jl")
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

@@ -1,7 +1,6 @@
 using Documenter
-using PDMO
 
-# Build documentation with minimal dependencies
+# Build documentation without loading PDMO package to avoid dependency issues
 makedocs(
     sitename = "PDMO.jl Documentation",
     authors = "PDMO.jl contributors",
