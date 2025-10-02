@@ -40,7 +40,7 @@ More specifically,
 `PDMO.jl` provides various algorithms to solve problems of the above form.
 
 - **Alternating Direction Method of Multipliers (ADMM)**
-  - Graph-based bipartization methods automatically generate ADMM-ready reformulations of `MultiblockProblem`.
+  - Graph-based bipartization methods automatically generate ADMM-ready reformulations of `MultiblockProblem` when $F=0$.
   - Various ADMM variants are available: 
     - Original ADMM 
     - Doubly linearized ADMM 
@@ -49,26 +49,17 @@ More specifically,
     - Penalty adapters, e.g., Residual Balancing, Spectral Radius Approximation
     - Accelerators, e.g., Halpern (with or without restart), Filtered Anderson
 
-- **Adaptive Primal-Dual Method (AdaPDM)**
-  - A suite of efficient and adaptive methods for problems with simpler coupling.
-    ```math 
-    \begin{aligned}
-    \min_{\mathbf{x}} \quad & \sum_{j=1}^{n-1} \left( f_j(x_j) + g_j(x_j) \right) + g_n(\mathbf{A}_{1,1}x_1 + \cdots + \mathbf{A}_{1,n-1}x_{n-1})
-    \end{aligned}
-    ```
-  - Various methods can be selected : 
-    - Original Condat-Vũ Method (Condat 2013, Vũ 2013)
-    - Adaptive Primal-Dual Method & Plus (Latafat et al. 2024)
-    - Malitsky-Pock Methd (Malitsky and Pock, 2018)
-
+- **Adaptive Primal-Dual Method (AdaPDM)**:
+  - A suite of efficient and adaptive methods for problems with simpler coupling, i.e., $m=1$, $F=f_n = 0$, and $\mathbf{A}_{1, n} = -\mathrm{Id}$. 
+  - Various methods can be selected: 
+    - Original Condat-Vu
+    - AdaPDM 
+    - AdaPDM+
+    - Malitsky-Pock
+    
 - **Block Coordinate Descent (BCD)** 
-    - A suite of classic methods for problems without constraints, i.e., $m=0$. 
-    ```math 
-    \begin{aligned}
-    \min_{\mathbf{x}} \quad & \sum_{j=1}^{n-1} \left( f_j(x_j) + g_j(x_j) \right) + g_n(\mathbf{A}_{1,1}x_1 + \cdots + \mathbf{A}_{1,n-1}x_{n-1})
-    \end{aligned}
-    ```
-    - Various subproblem solvers can be selected (Xu and Yin 2013):
+  - A suite of classic methods for problems without constraints, i.e., $m=0$. 
+  - Various subproblem solvers can be selected:
       - Original BCD Subproblem Solver
       - Proximal BCD Subproblem Solver
       - Prox-linear BCD Subproblem Solver

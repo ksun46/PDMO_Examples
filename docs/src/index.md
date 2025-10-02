@@ -42,7 +42,7 @@ More specifically,
 `PDMO.jl` provides various algorithms to solve problems of the above form.
 
 - **Alternating Direction Method of Multipliers (ADMM)**
-  - Graph-based bipartization methods automatically generate ADMM-ready reformulations of `MultiblockProblem`.
+  - Graph-based bipartization methods automatically generate ADMM-ready reformulations of `MultiblockProblem` when $F=0$.
   - Various ADMM variants are available: 
     - Original ADMM 
     - Doubly linearized ADMM 
@@ -51,13 +51,8 @@ More specifically,
     - Penalty adapters, e.g., Residual Balancing, Spectral Radius Approximation
     - Accelerators, e.g., Halpern (with or without restart), Filtered Anderson
 
-- **Adaptive Primal-Dual Method (AdaPDM)**
-```math 
-\begin{aligned}
-  \min_{\mathbf{x}} \quad & \sum_{j=1}^{n-1} \left( f_j(x_j) + g_j(x_j) \right) + g_n(\mathbf{A}_{1,1}x_1 + \cdots + \mathbf{A}_{1,n-1}x_{n-1})
-\end{aligned}
-```
-  - A suite of efficient and adaptive methods for problems with simpler coupling, i.e., $m=1$, $f_n = 0$, and $\mathbf{A}_{1, n} = -\mathrm{Id}$. 
+- **Adaptive Primal-Dual Method (AdaPDM)**:
+  - A suite of efficient and adaptive methods for problems with simpler coupling, i.e., $m=1$, $F=f_n = 0$, and $\mathbf{A}_{1, n} = -\mathrm{Id}$. 
   - Various methods can be selected: 
     - Original Condat-Vu
     - AdaPDM 
@@ -65,11 +60,6 @@ More specifically,
     - Malitsky-Pock
     
 - **Block Coordinate Descent (BCD)** 
-```math 
-\begin{aligned}
-  \min_{\mathbf{x}} \quad & F(\mathbf{x}) + \sum_{j=1}^{n} \left( f_j(x_j) + g_j(x_j) \right) 
-\end{aligned}
-```
   - A suite of classic methods for problems without constraints, i.e., $m=0$. 
   - Various subproblem solvers can be selected (Xu and Yin 2013):
       - Original BCD Subproblem Solver
