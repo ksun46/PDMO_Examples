@@ -54,9 +54,9 @@ More specifically,
 - **Adaptive Primal-Dual Method (AdaPDM)**
   - A suite of efficient and adaptive methods for problems with simpler coupling, i.e., $m=1$, $f_n = 0$, and $\mathbf{A}_{1, n} = -\mathrm{Id}$. 
   ```math 
-    \begin{aligned}
+  \begin{aligned}
     \min_{\mathbf{x}} \quad & \sum_{j=1}^{n-1} \left( f_j(x_j) + g_j(x_j) \right) + g_n(\mathbf{A}_{1,1}x_1 + \cdots + \mathbf{A}_{1,n-1}x_{n-1})
-    \end{aligned}
+  \end{aligned}
   ```
   - Various methods can be selected: 
     - Original Condat-Vu
@@ -67,9 +67,9 @@ More specifically,
 - **Block Coordinate Descent (BCD)** 
   - A suite of classic methods for problems without constraints, i.e., $m=0$. 
     ```math 
-      \begin{aligned}
+    \begin{aligned}
       \min_{\mathbf{x}} \quad & F(\mathbf{x}) + \sum_{j=1}^{n} \left( f_j(x_j) + g_j(x_j) \right) 
-      \end{aligned}
+    \end{aligned}
     ```
   - Various subproblem solvers can be selected (Xu and Yin 2013):
       - Original BCD Subproblem Solver
