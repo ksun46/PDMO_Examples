@@ -13,7 +13,7 @@ state-of-the-art solvers.
 
 ```math 
 \begin{aligned}
-\min_{\mathbf{x}} \quad & \sum_{j=1}^n \left( f_j(x_j) + g_j(x_j) \right)\\ 
+\min_{\mathbf{x}} \quad & F(\mathbf{x}) + \sum_{j=1}^n \left( f_j(x_j) + g_j(x_j) \right)\\ 
 \mathrm{s.t.} \quad  & \mathbf{A} \mathbf{x} = \mathbf{b},
 \end{aligned}
 ```
@@ -34,7 +34,8 @@ More specifically,
     - the linear operator $\mathbf{A}_{i,j}$ is **non-zero** if and only if constraint $i$ involves blocks $x_j$;
     - the adjoint operator of $\mathbf{A}_{i,j}$ is available;
     - the right-hand side $b_i$ can be a numeric array of any shape. 
-
+- Additionally, there might exist a smooth function $F$ that couples all BlockVariables:
+    - we assume that $F(\cdot)$, $\nabla F(\cdot)$,  and $\nabla_j F(\cdot)$'s for $j\in \{1,\cdots, n\}$ are available.
 
 ### Algorithms
 
@@ -63,7 +64,18 @@ More specifically,
     - AdaPDM+
     - Malitsky-Pock
     
-   
+- **Block Coordinate Descent (BCD)** 
+  - A suite of classic methods for problems without constraints, i.e., $m=0$. 
+    ```math 
+      \begin{aligned}
+      \min_{\mathbf{x}} \quad & F(\mathbf{x}) + \sum_{j=1}^{n} \left( f_j(x_j) + g_j(x_j) \right) 
+      \end{aligned}
+    ```
+  - Various subproblem solvers can be selected (Xu and Yin 2013):
+      - Original BCD Subproblem Solver
+      - Proximal BCD Subproblem Solver
+      - Prox-linear BCD Subproblem Solver
+
 
 ### Key Features 
 - 🧱 **Unified Modeling**: A versatile interface for structured problems.
@@ -92,7 +104,7 @@ More specifically,
 ## This Documentation 
 
 - Check out [**Getting Started**](S1_getting_started.md) for installation guide and your first optimization problem with ```PDMO.jl```.
-- Learn more about the theoretical foundations of [**ADMM**](S2_algorithms/ADMM.md) and [**AdaPDM**](S2_algorithms/AdaPDM.md), and how to explore different algorithmic components for better performance. 
+- Learn more about the theoretical foundations of [**ADMM**](S2_algorithms/ADMM.md), [**AdaPDM**](S2_algorithms/AdaPDM.md), and [**BCD**](S2_algorithms/BCD.md) and how to explore different algorithmic components for better performance. 
 - See [**Examples**](S3_examples/LeastL1Norm.md) for pre-defined templates of some classic applications and benchmark results.
 - Check out [**API References**](S4_api/main.md) to implement and customize your own algorithms
 

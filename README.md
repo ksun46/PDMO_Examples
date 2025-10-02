@@ -12,7 +12,7 @@
 
 ```math 
 \begin{aligned}
-\min_{\mathbf{x}} \quad & \sum_{j=1}^n \left( f_j(x_j) + g_j(x_j) \right)\\ 
+\min_{\mathbf{x}} \quad & F(\mathbf{x}) + \sum_{j=1}^n \left( f_j(x_j) + g_j(x_j) \right)\\ 
 \mathrm{s.t.} \quad  & \mathbf{A} \mathbf{x} = \mathbf{b},
 \end{aligned}
 ```
@@ -33,7 +33,8 @@ More specifically,
     - the linear operator $\mathbf{A}_{i,j}$ is **non-zero** if and only if constraint $i$ involves blocks $x_j$;
     - the adjoint operator of $\mathbf{A}_{i,j}$ is available;
     - the right-hand side $b_i$ can be a numeric array of any shape. 
-
+- Additionally, there might exist a smooth function $F$ that couples all BlockVariables:
+    - we assume that $F(\cdot)$, $\nabla F(\cdot)$,  and $\nabla_j F(\cdot)$'s for $j\in \{1,\cdots, n\}$ are available.
 ## Available Algorithms
 
 `PDMO.jl` provides various algorithms to solve problems of the above form.
@@ -59,6 +60,18 @@ More specifically,
     - Original Condat-Vũ Method (Condat 2013, Vũ 2013)
     - Adaptive Primal-Dual Method & Plus (Latafat et al. 2024)
     - Malitsky-Pock Methd (Malitsky and Pock, 2018)
+
+- **Block Coordinate Descent (BCD)** 
+    - A suite of classic methods for problems without constraints, i.e., $m=0$. 
+      ```math 
+        \begin{aligned}
+        \min_{\mathbf{x}} \quad & F(\mathbf{x}) + \sum_{j=1}^{n} \left( f_j(x_j) + g_j(x_j) \right) 
+        \end{aligned}
+      ```
+    - Various subproblem solvers can be selected (Xu and Yin 2013):
+        - Original BCD Subproblem Solver
+        - Proximal BCD Subproblem Solver
+        - Prox-linear BCD Subproblem Solver
 
 ## Key Features 
 - 🧱 **Unified Modeling**: A versatile interface for structured problems.
