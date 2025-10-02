@@ -102,6 +102,7 @@ mutable struct ADMMParam
     timeLimit::Float64
     applyScaling::Bool
     enablePathologyCheck::Bool
+    logLevel::Int64
 
     ADMMParam(; 
       initialRho::Float64 = 10.0, 
@@ -116,7 +117,8 @@ mutable struct ADMMParam
       logInterval::Int64 = 1000, 
       timeLimit::Float64 = 3600.0, 
       applyScaling::Bool = false, 
-      enablePathologyCheck::Bool = false
+      enablePathologyCheck::Bool = false,
+      logLevel::Int64 = 1
     ) = new(
         initialRho, 
         maxIter, 
@@ -130,5 +132,6 @@ mutable struct ADMMParam
         logInterval, 
         timeLimit, 
         applyScaling, 
-        enablePathologyCheck)
+        enablePathologyCheck,
+        logLevel)
 end

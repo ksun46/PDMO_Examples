@@ -196,7 +196,7 @@ mutable struct AdaptiveLinearizedSolver <: AbstractADMMSubproblemSolver
     ygradCur::Dict{String, NumericVariable}       #∇g(y^{k})
     ifSimple::Bool                               
     
-
+    logLevel::Int64
     function AdaptiveLinearizedSolver(;gamma::Float64=1.0, r::Float64=1.0, ifSimple::Bool=false)
         solver = new(gamma,
             # Dict{String, EdgeData}(),
@@ -209,7 +209,8 @@ mutable struct AdaptiveLinearizedSolver <: AbstractADMMSubproblemSolver
             Dict{String, NumericVariable}(),
             Dict{String, NumericVariable}(),
             Dict{String, NumericVariable}(),
-            ifSimple
+            ifSimple, 
+            1
         )
         return solver
     end
@@ -261,7 +262,7 @@ The initialization computes:
 - Parallel gradient computation across nodes when possible
 - Efficient memory layout for cache-friendly access patterns
 """
-function initialize!(solver::AdaptiveLinearizedSolver, admmGraph::ADMMBipartiteGraph, info::ADMMIterationInfo)
+function initialize!(solver::AdaptiveLinearizedSolver, admmGraph::ADMMBipartiteGraph, info::ADMMIterationInfo, logLevel::Int64)
     # Allocate primal and dual buffers
     for (nodeID,node) in admmGraph.nodes
         solver.primalBuffer[nodeID] = similar(node.val)
@@ -309,9 +310,11 @@ function initialize!(solver::AdaptiveLinearizedSolver, admmGraph::ADMMBipartiteG
                         solver.primalBuffer[nodeID])
     end
 
+    solver.logLevel = logLevel
+
     if solver.ifSimple
         solver.φ = 2
-        @info "AdaptiveLinearizedSolver: Implementing simple adaptive ADMM"
+        @PDMOInfo solver.logLevel "AdaptiveLinearizedSolver: Implementing simple adaptive ADMM"
     end
 
     return true

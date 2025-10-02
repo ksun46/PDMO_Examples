@@ -96,8 +96,5 @@ createADMMEdgeID
 
 ```@docs
 solveMultiblockProblemByJuMP
-isSupportedObjectiveFunction
-isSupportedProximalFunction
-unwrapFunction
 addBlockVariableToJuMPModel!
 ```

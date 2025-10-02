@@ -16,30 +16,6 @@ vector/matrix and r is a scalar offset.
 - **Smooth**: Yes, gradient is constant
 - **Convex**: Yes, affine functions are convex
 - **Proximal**: Yes, has explicit proximal operator
-
-# Mathematical Properties
-- **Gradient**: ∇f(x) = A (constant)
-- **Proximal Operator**: prox_γf(x) = x - γA
-
-# Examples
-```julia
-# Linear function f(x) = 2x₁ + 3x₂ + 1
-A = [2.0, 3.0]
-r = 1.0
-f = AffineFunction(A, r)
-x = [1.0, 2.0]
-val = f(x)  # Returns 2*1 + 3*2 + 1 = 9
-
-# Scalar function f(x) = 5x + 2
-f = AffineFunction(5.0, 2.0)
-val = f(3.0)  # Returns 5*3 + 2 = 17
-```
-
-# Applications
-- Linear constraints in optimization
-- Objective functions in linear programming
-- Penalty terms in regularization
-- Building blocks for more complex functions
 """
 struct AffineFunction <: AbstractFunction 
     A::NumericVariable 
@@ -54,6 +30,7 @@ end
 isProximal(f::Type{<:AffineFunction}) = true
 isSmooth(f::Type{<:AffineFunction}) = true
 isConvex(f::Type{<:AffineFunction}) = true
+isSupportedByJuMP(f::Type{<:AffineFunction}) = true
 
 # function value
 function (f::AffineFunction)(x::NumericVariable, enableParallel::Bool=false)
@@ -106,3 +83,30 @@ function proximalOracle(f::AffineFunction, x::NumericVariable, gamma::Float64, e
         return y
     end
 end
+
+# JuMP support
+function JuMPAddProximableFunction(g::AffineFunction, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    # AffineFunction as a proximable function doesn't add constraints
+    # (it's unconstrained), but it contributes to the objective
+    # Create linear expression: A'x + r
+    obj_expr = JuMP.AffExpr(g.r)  # Start with constant term
+    
+    # Add linear terms
+    if isa(g.A, Number)
+        # Scalar case: A*x[1] 
+        JuMP.add_to_expression!(obj_expr, g.A * var[1])
+    else
+        # Vector case: A'*x = sum(A[i] * x[i])
+        for i in 1:length(g.A)
+            JuMP.add_to_expression!(obj_expr, g.A[i] * var[i])
+        end
+    end
+    
+    return obj_expr
+end
+
+function JuMPAddSmoothFunction(f::AffineFunction, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    return JuMPAddProximableFunction(f, model, var)
+end
+
+

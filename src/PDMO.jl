@@ -8,22 +8,14 @@ using FilePathsBase
 using Logging 
 using Base.Threads 
 using Test
+using Ipopt
 using DataStructures
 using Random
 Random.seed!(126)
 
 import Printf
-
-# Conditional loading of heavy solver dependencies
-const SOLVERS_AVAILABLE = try
-    using Ipopt
-    import HiGHS
-    import JuMP
-    true
-catch e
-    @warn "PDMO: Heavy solver dependencies (Ipopt, HiGHS, JuMP) not available. Some functionality will be limited." exception=e
-    false
-end
+import HiGHS
+import JuMP
 
 const norm = LinearAlgebra.norm 
 const opnorm = LinearAlgebra.opnorm
@@ -92,6 +84,12 @@ export proximalOracleOfConjugate, proximalOracleOfConjugate!
 # Export utility functions
 export estimateLipschitzConstant
 
+# Export multiblock function types and APIs
+export AbstractMultiblockFunction, QuadraticMultiblockFunction
+export partialGradientOracle!, partialGradientOracle
+export getNumberOfBlocks, validateBlockDimensions
+export JuMPAddPartialBlockFunction
+
 
 # Export core mappings and abstract types
 export AbstractMapping 
@@ -116,6 +114,7 @@ export MultiblockProblem, addBlockVariable!, addBlockConstraint!
 export checkMultiblockProblemValidity
 export checkMultiblockProblemFeasibility
 export checkCompositeProblemValidity!
+export createFeasibilityProblem, transformConstraintsToQuadraticPenalty
 
 export solveMultiblockProblemByJuMP
 export MultiblockGraph, numberNodes, numberEdges, numberEdgesByTypes, getNodelNeighbors
@@ -142,9 +141,9 @@ export createADMMNodeID, createADMMEdgeID
 # export conservativeScaling, moderateScaling, aggressiveScaling, customScaling
 # export reportScalingResults, getScalingStrategyInfo, allScalingFactorsAreOne
 
-# Export JuMP interface functions
-export isSupportedObjectiveFunction, isSupportedProximalFunction
-export unwrapFunction, addBlockVariableToJuMPModel!
+# Export JuMP interface functions  
+export isSupportedByJuMP, JuMPAddProximableFunction, JuMPAddSmoothFunction
+export addBlockVariableToJuMPModel!
 
 # Export summary functions
 export summary
@@ -179,8 +178,19 @@ export checkTerminationCriteria, checkOptimalTermination, checkIterationLimit
 export checkTimeLimit, checkNumericalError, checkUnboundedness, getTerminationStatus
 export AdaPDMLog
 
+# Export BCD algorithm components
+export AbstractBlockUpdateOrder, CyclicRule, updateBlockOrder!
+export BCDParam, BCDIterationInfo, BCDTerminationStatus, BCDTerminationCriteria
+export AbstractBCDSubproblemSolver, BCDProximalSubproblemSolver, BCDProximalLinearSubproblemSolver
+export initialize!, solve!, updateDualResidual!, getBCDSubproblemSolverName
+export BCDLog
+
 # Export core algorithm functions
 export runAdaPDM
 export runBipartiteADMM
+export runBCD
+
+# Export PDMO logging macros
+export @PDMOInfo, @PDMOWarn, @PDMOError, @PDMODebug
 
 end # module PDMO

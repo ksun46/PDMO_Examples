@@ -25,24 +25,6 @@ All properties are inherited from the original function, with input/output adapt
 - **Input**: Vector of length 1, e.g., [x]
 - **Output**: Scalar for function evaluation, vector of length 1 for gradient/proximal
 
-# Examples
-```julia
-# Adapt a scalar indicator function to vector interface
-# Original function: f(x) = I_{[0,1]}(x) for scalar x
-original_f = IndicatorBox(0.0, 1.0)  # Scalar version
-vector_f = WrapperScalarInputFunction(original_f)
-
-# Usage with vector input
-x = [0.5]  # Vector of length 1
-val = vector_f(x)  # Returns 0.0
-grad = gradientOracle(vector_f, x)  # Returns [0.0] (if smooth)
-prox = proximalOracle(vector_f, x)  # Returns [0.5] (projection)
-
-# Invalid usage
-x = [0.5, 1.0]  # Vector of length 2
-# val = vector_f(x)  # ERROR: input must be vector of length 1
-```
-
 # Use Cases
 - Adapting scalar functions for vector-based algorithms
 - Interfacing with optimization solvers that expect vector inputs
@@ -71,10 +53,11 @@ end
 
 # Delegate the traits to the original function. 
 # Note: the traits checkers for WrapperScalarInputFunction check the instance instead of the type. 
-isProximal(w::WrapperScalarInputFunction) = isProximal(typeof(w.originalFunction))
-isSmooth(w::WrapperScalarInputFunction) = isSmooth(typeof(w.originalFunction))
-isConvex(w::WrapperScalarInputFunction) = isConvex(typeof(w.originalFunction))
-isSet(w::WrapperScalarInputFunction) = isSet(typeof(w.originalFunction))
+isProximal(w::WrapperScalarInputFunction) = isProximal(w.originalFunction)
+isSmooth(w::WrapperScalarInputFunction) = isSmooth(w.originalFunction)
+isConvex(w::WrapperScalarInputFunction) = isConvex(w.originalFunction)
+isSet(w::WrapperScalarInputFunction) = isSet(w.originalFunction)
+isSupportedByJuMP(w::WrapperScalarInputFunction) = isSupportedByJuMP(w.originalFunction)
 
 function (f::WrapperScalarInputFunction)(x::NumericVariable, enableParallel::Bool=false)
     @assert(isa(x, Vector{Float64}) && length(x) == 1, "WrapperScalarInputFunction: input must be a vector of length 1.")
@@ -114,4 +97,42 @@ function proximalOracle(f::WrapperScalarInputFunction, x::NumericVariable, gamma
     return y
 end  
 
+# JuMP support
+function JuMPAddProximableFunction(g::WrapperScalarInputFunction, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    # WrapperScalarInputFunction only works with dimension 1
+    @assert length(var) == 1 "WrapperScalarInputFunction: dimension must be 1, got $(length(var))"
+    
+    # Check if original function supports JuMP
+    if isSupportedByJuMP(g.originalFunction) == false
+        error("WrapperScalarInputFunction: original function $(typeof(g.originalFunction)) does not support JuMP")
+    end
+    
+    # Check if original function is proximable (constraint-related)
+    if isProximal(g.originalFunction) == false
+        error("WrapperScalarInputFunction: JuMPAddProximableFunction called but original function is not proximal")
+    end
+    
+    # Delegate to original function's JuMP implementation
+    return JuMPAddProximableFunction(g.originalFunction, model, var)
+end
+
+function JuMPAddSmoothFunction(f::WrapperScalarInputFunction, model::JuMP.Model, 
+    var::Vector{<:JuMP.VariableRef})
+    
+    # WrapperScalarInputFunction only works with dimension 1
+    @assert length(var) == 1 "WrapperScalarInputFunction: variable dimension must be 1, got $(length(var))"
+    
+    # Check if original function supports JuMP
+    if isSupportedByJuMP(f.originalFunction) == false
+        error("WrapperScalarInputFunction: original function $(typeof(f.originalFunction)) does not support JuMP")
+    end
+    
+    # Check if original function is smooth (objective-related)
+    if isSmooth(f.originalFunction) == false
+        error("WrapperScalarInputFunction: JuMPAddSmoothFunction called but original function is not smooth")
+    end
+
+    # Delegate to original function's JuMP implementation
+    return JuMPAddSmoothFunction(f.originalFunction, model, var)
+end
 

@@ -1,3 +1,5 @@
+include("Util/PDMOLogger.jl")
+
 # basic algorithmic components
 include("Components/Functions/AbstractFunction.jl")
 include("Components/Mappings/AbstractMapping.jl")
@@ -16,6 +18,11 @@ include("Formulations/ADMMBipartiteGraph.jl")
 # algorithmic components 
 include("Algorithms/ADMM/BipartiteADMM.jl")
 include("Algorithms/AdaPDM/AdaPDM.jl") 
+include("Algorithms/BCD/BCD.jl") 
+
+# # io 
+# include("Util/io.jl")
+
 
 
 """
@@ -88,24 +95,31 @@ function runBipartiteADMM(mbp::MultiblockProblem,
     trueObj::Float64 = Inf,
     tryJuMP::Bool = true)
 
-    @info "Run Bipartite ADMM with threads = $(Threads.nthreads())."
+    @PDMOInfo param.logLevel "Run Bipartite ADMM with threads = $(Threads.nthreads())."
     
     # 1. sanity check for the problem 
-    if checkMultiblockProblemValidity(mbp) == false 
-        error("MultiblockProblem: The instance is not valid. ")
+    if mbp.couplingFunction != nothing 
+        @PDMOError param.logLevel "MultiblockProblem: The instance has multiblock function;not ready for bipartite ADMM."
+        return 
     end 
-    summary(mbp)
+   
+    if checkMultiblockProblemValidity(mbp) == false 
+        @PDMOError param.logLevel "MultiblockProblem: The instance is not valid. "
+        return 
+    end 
+
+    summary(mbp, param.logLevel)
 
     # 2. scale the problem 
     scalingInfo = param.applyScaling ? scaleMultiblockProblem!(mbp, scalingOptions=moderateScaling()) : nothing
 
     # 3. create a multblock graph instance from the problem
     graph = MultiblockGraph(mbp)
-    summary(graph)
+    summary(graph, param.logLevel)
 
     # 4. generate ADMM bipartite graph 
-    admmGraph = ADMMBipartiteGraph(graph, mbp, bipartizationAlgorithm)
-    summary(admmGraph)
+    admmGraph = ADMMBipartiteGraph(graph, mbp, bipartizationAlgorithm, param.logLevel)
+    summary(admmGraph, param.logLevel)
 
     # 5. execute ADMM
     info = BipartiteADMM(admmGraph, param)
@@ -131,22 +145,21 @@ function runBipartiteADMM(mbp::MultiblockProblem,
 
     # 6. summarize the ADMM result    
     if trueObj < Inf
-        ADMMLog(info, trueObj)
+        ADMMLog(info, param.logLevel, trueObj)
     else 
         objByJuMP = Inf
         if tryJuMP
             try 
-                objByJuMP = solveMultiblockProblemByJuMP(mbp)
+                objByJuMP = solveMultiblockProblemByJuMP(mbp, param.logLevel)
             catch e
-                @warn "MultiblockProblem: Failed to verify objective value using JuMP ($e)"
+                @PDMOWarn param.logLevel "MultiblockProblem: Failed to verify objective value using JuMP ($e)"
             end 
         end 
-        ADMMLog(info, objByJuMP)
+        ADMMLog(info, param.logLevel, objByJuMP)
     end
 
     presL2, presLinf = checkMultiblockProblemFeasibility(mbp, primalSolution)
-    msg = Printf.@sprintf("Infeasibility measures of original blocks: Pres (L2) = %.4e, Pres (LInf) = %.4e", presL2, presLinf)
-    @info msg 
+    @PDMOInfo param.logLevel Printf.@sprintf("Infeasibility measures of original blocks: Pres (L2) = %.4e, Pres (LInf) = %.4e", presL2, presLinf)
     
     return (solution=primalSolution, iterationInfo=info)
 end 
@@ -216,17 +229,29 @@ function runAdaPDM(mbp::MultiblockProblem, param::AbstractAdaPDMParam;
     @info "Run AdaPDM with threads = $(Threads.nthreads())."
 
     # 1. sanity check for the problem 
-    if checkMultiblockProblemValidity(mbp) == false 
-        error("runAdaPDM: The instance is not ready for adpative primal-dual method.")
+    if mbp.couplingFunction != nothing 
+        @PDMOError param.logLevel "MultiblockProblem: The instance has multiblock function;not ready for adaptive primal-dual method."
+        return
     end 
-    summary(mbp)
+
+    if checkMultiblockProblemValidity(mbp) == false 
+        @PDMOError param.logLevel "runAdaPDM: The instance is not ready for adpative primal-dual method."
+        return
+    end 
+
+    if checkCompositeProblemValidity!(mbp) == false 
+        @PDMOError param.logLevel "runAdaPDM: The instance is not ready for adpative primal-dual method."
+        return
+    end 
+    
+    summary(mbp, param.logLevel)
     
     # 2. run the algorithm 
     info = AdaptivePrimalDualMethod(mbp, param)
 
-    # 3. summarize the resi;t
+    # 3. summarize the result 
     if trueObj < Inf
-        AdaPDMLog(info, trueObj)
+        AdaPDMLog(info, param.logLevel, trueObj)
     else 
         objByJuMP = Inf
         if tryJuMP
@@ -236,7 +261,7 @@ function runAdaPDM(mbp::MultiblockProblem, param::AbstractAdaPDMParam;
                 @info "MultiblockProblem: Failed to solve the whole problem using JuMP. "
             end 
         end 
-        AdaPDMLog(info, objByJuMP)
+        AdaPDMLog(info, param.logLevel, objByJuMP)
     end
     
     # 4. save the solution 
@@ -254,3 +279,141 @@ function runAdaPDM(mbp::MultiblockProblem, param::AbstractAdaPDMParam;
  
     return (solution=primalSolution, iterationInfo=info)
 end 
+
+
+
+"""
+    runBCD(mbp::MultiblockProblem, param::BCDParam; kwargs...)
+
+Solve a multiblock optimization problem using the Block Coordinate Descent (BCD) algorithm.
+
+This function implements the BCD algorithm for solving multiblock optimization problems of the form:
+
+```
+min F(x₁,...,xₙ) + ∑ⱼ₌₁ⁿ (fⱼ(xⱼ) + gⱼ(xⱼ))
+```
+
+where F is a smooth coupling function, fⱼ are smooth block functions, and gⱼ are proximable functions
+(including domain constraints via indicator functions).
+
+# Arguments
+- `mbp::MultiblockProblem`: The multiblock optimization problem to solve. Must have:
+  - A coupling function (cannot be separable)
+  - No constraints (constraint-free formulation)
+  - Valid problem structure
+- `param::BCDParam`: BCD algorithm parameters including:
+  - `blockOrderRule`: Strategy for block update ordering (e.g., CyclicRule)
+  - `solver`: Subproblem solver (Original, Proximal, or Linearized BCD)
+  - `dresTolL2`, `dresTolLInf`: Dual residual tolerances for convergence
+  - `maxIter`: Maximum number of iterations
+  - `timeLimit`: Maximum computation time (seconds)
+  - `logLevel`: Logging verbosity level
+
+# Keyword Arguments
+- `saveSolutionInMultiblockProblem::Bool = true`: Whether to save the solution back to the problem blocks
+- `trueObj::Float64 = Inf`: Known true objective value for validation (if available)
+- `tryJuMP::Bool = true`: Whether to verify solution using JuMP solver for comparison
+
+# Returns
+A named tuple containing:
+- `solution::Dict{BlockID, NumericVariable}`: Final solution for each block indexed by block ID
+- `iterationInfo::BCDIterationInfo`: Detailed algorithm information including:
+  - `obj::Vector{Float64}`: Objective value history
+  - `dresL2`, `dresLInf::Vector{Float64}`: Dual residual histories
+  - `solution::Vector{NumericVariable}`: Final solution blocks
+  - `stopIter::Int64`: Final iteration count
+  - `totalTime::Float64`: Total computation time
+  - `terminationStatus::BCDTerminationStatus`: Convergence status
+
+# Termination Criteria
+The algorithm terminates when any of the following conditions are met:
+- Dual residual L2 norm ≤ `param.dresTolL2`
+- Dual residual L∞ norm ≤ `param.dresTolLInf`
+- Maximum iterations (`param.maxIter`) reached
+- Time limit (`param.timeLimit`) exceeded
+
+# Examples
+```julia
+using PDMO
+
+# Set up BCD parameters
+param = BCDParam(
+    blockOrderRule = CyclicRule(),
+    solver = BCDProximalSubproblemSolver(),
+    dresTolL2 = 1e-6,
+    dresTolLInf = 1e-6,
+    maxIter = 1000,
+    timeLimit = 3600.0,
+    logLevel = 1
+)
+
+# Solve the problem
+result = runBCD(mbp, param)
+
+# Access results
+solution = result.solution
+objective_history = result.iterationInfo.obj
+final_iteration = result.iterationInfo.stopIter
+```
+
+# Error Handling
+The function returns `nothing` and logs errors for:
+- Problems with constraints
+- Problems without coupling functions
+- Invalid problem structures
+"""
+function runBCD(mbp::MultiblockProblem, param::BCDParam; 
+    saveSolutionInMultiblockProblem::Bool = true, 
+    trueObj::Float64 = Inf,
+    tryJuMP::Bool = true)
+    @PDMOInfo param.logLevel "Run BCD with threads = $(Threads.nthreads())."
+
+    # 1. sanity check for the problem 
+    if isempty(mbp.constraints) == false 
+        @PDMOError param.logLevel "runBCD: The instance has constraints; not ready for BCD."
+        return
+    end 
+
+    if mbp.couplingFunction == nothing 
+        # Todo: if the problem is separable, we should handle it in PDMO. 
+        @PDMOError param.logLevel "runBCD: The instance has no coupling function; try decompose the problem first."
+        return
+    end 
+
+    if checkMultiblockProblemValidity(mbp) == false 
+        @PDMOError param.logLevel "runBCD: The instance is not valid."
+        return
+    end 
+
+    summary(mbp, param.logLevel)
+
+    # 2. run the algorithm 
+    info = BCD(mbp, param)
+    
+    # 3. summarize the result 
+    if trueObj < Inf
+        BCDLog(info, param.logLevel, trueObj)
+    else 
+        objByJuMP = Inf
+        if tryJuMP
+            try 
+                objByJuMP = solveMultiblockProblemByJuMP(mbp)
+            catch err
+                @PDMOError param.logLevel "MultiblockProblem: Failed to solve the whole problem using JuMP. error = $err"
+            end 
+        end 
+        BCDLog(info, param.logLevel, objByJuMP)
+    end
+
+    # 3. save the solution 
+    primalSolution = Dict{BlockID, NumericVariable}()
+    for i in 1:length(mbp.blocks)
+        primalSolution[mbp.blocks[i].id] = info.solution[i]
+        if saveSolutionInMultiblockProblem
+            copyto!(mbp.blocks[i].val, info.solution[i])
+        end
+    end 
+
+    return (solution=primalSolution, iterationInfo=info)
+end 
+    

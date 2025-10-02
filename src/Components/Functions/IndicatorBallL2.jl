@@ -23,29 +23,6 @@ f(x) = +∞   otherwise
   - If ||x||₂ ≤ r: prox_f(x) = x
   - If ||x||₂ > r: prox_f(x) = (r/||x||₂) * x
 
-# Examples
-```julia
-# Unit L2 ball (radius 1)
-f = IndicatorBallL2(1.0)
-x = [0.5, 0.5]
-val = f(x)  # Returns 0.0 since ||x||₂ = √0.5 < 1
-
-# Point outside the ball
-x = [2.0, 2.0]
-val = f(x)  # Returns +∞ since ||x||₂ = 2√2 > 1
-
-# Proximal operator (projection onto ball)
-f = IndicatorBallL2(1.0)
-x = [3.0, 4.0]  # ||x||₂ = 5
-prox_x = proximalOracle(f, x)  # Returns [0.6, 0.8] (normalized to unit length)
-```
-
-# Applications
-- Constraint sets in optimization
-- Regularization in machine learning
-- Trust region methods
-- Robust optimization
-- Signal processing (bounded energy constraints)
 """
 struct IndicatorBallL2 <: AbstractFunction
     r::Float64 
@@ -61,6 +38,7 @@ end
 isProximal(::Type{IndicatorBallL2}) = true 
 isConvex(::Type{IndicatorBallL2}) = true 
 isSet(::Type{IndicatorBallL2}) = true 
+isSupportedByJuMP(f::Type{<:IndicatorBallL2}) = true
 
 # function value
 function (f::IndicatorBallL2)(x::NumericVariable, enableParallel::Bool=false)
@@ -102,3 +80,18 @@ function proximalOracle(f::IndicatorBallL2, x::NumericVariable, gamma::Float64 =
         return y
     end
 end
+
+# JuMP support
+function JuMPAddProximableFunction(g::IndicatorBallL2, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    # Set bounds on variables to tighten the domain: -r <= x[k] <= r
+    for k in 1:length(var)
+        JuMP.set_lower_bound(var[k], -g.r)
+        JuMP.set_upper_bound(var[k], g.r)
+    end
+    
+    # Add L2 ball constraint: ||x||_2 <= r
+    JuMP.@constraint(model, sum(var[k]^2 for k in 1:length(var)) <= g.r^2)
+    
+    return nothing  # L2 ball constraint doesn't contribute to objective
+end
+

@@ -88,9 +88,3 @@ function proximalOracle(f::WeightedMatrixL1Norm, x::NumericVariable, gamma::Floa
     return y
 end 
 
-
-
-
-
-
-

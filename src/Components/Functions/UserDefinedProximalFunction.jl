@@ -20,38 +20,25 @@ and its proximal operator, enabling integration with proximal algorithms.
 - **Function evaluation**: f(x) provided by user
 - **Proximal operator**: prox_γf(x) provided by user
 
-# Examples
-```julia
 # L1 Norm Function
 # f(x) = λ||x||₁ (L1 norm with coefficient λ)
 λ = 0.5
 func = x -> λ * sum(abs.(x))
 proximalFunc = (x, gamma) -> sign.(x) .* max.(abs.(x) .- gamma * λ, 0.0)  # Soft thresholding
-f = UserDefinedProximalFunction(func, proximalFunc, true)  # convex=true
-
 # Indicator Function of Box Constraints
 # f(x) = I_{[a,b]}(x) (indicator function of box [a,b])
 a, b = -1.0, 1.0
 func = x -> all(a .<= x .<= b) ? 0.0 : Inf
 proximalFunc = (x, gamma) -> clamp.(x, a, b)  # Projection onto box
-f = UserDefinedProximalFunction(func, proximalFunc, true)  # convex=true
-
 # Custom Regularization Function
 # f(x) = α * g(x) where g has known proximal operator
 α = 0.1
 func = x -> α * myCustomFunction(x)
 proximalFunc = (x, gamma) -> myCustomProximal(x, gamma * α)
-f = UserDefinedProximalFunction(func, proximalFunc, true)  # convex=true
-```
-
 # Integration with Bipartization
 ```julia
 # In your optimization problems
 block_x = BlockVariable(xID)
-block_x.f = UserDefinedProximalFunction(myFunc, myProximal, true)
-addBlockVariable!(nlp, block_x)
-```
-
 # Requirements
 - `func(x)` must return a Float64 value
 - `proximalFunc(x, gamma)` must return a result of the same type as x
@@ -111,24 +98,17 @@ end
 # λ = 0.5
 # func = x -> λ * sum(abs.(x))
 # proximalFunc = (x, gamma) -> sign.(x) .* max.(abs.(x) .- gamma * λ, 0.0)  # Soft thresholding
-# f = UserDefinedProximalFunction(func, proximalFunc, true)  # convex=true
-#
 # # Indicator Function of Box Constraints
 # # f(x) = I_{[a,b]}(x) (indicator function of box [a,b])
 # a, b = -1.0, 1.0
 # func = x -> all(a .<= x .<= b) ? 0.0 : Inf
 # proximalFunc = (x, gamma) -> clamp.(x, a, b)  # Projection onto box
-# f = UserDefinedProximalFunction(func, proximalFunc, true)  # convex=true
-#
 # # Custom Regularization Function
 # # f(x) = α * g(x) where g has known proximal operator
 # α = 0.1
 # func = x -> α * myCustomFunction(x)
 # proximalFunc = (x, gamma) -> myCustomProximal(x, gamma * α)
-# f = UserDefinedProximalFunction(func, proximalFunc, true)  # convex=true
-#
 # # Integration with Bipartization
 # # In your optimization problems
 # block_x = BlockVariable(xID)
-# block_x.f = UserDefinedProximalFunction(myFunc, myProximal, true)
 # addBlockVariable!(nlp, block_x) 

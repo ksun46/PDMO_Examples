@@ -765,9 +765,9 @@ admm_graph_balanced = ADMMBipartiteGraph(graph, mbp, SPANNING_TREE_BIPARTIZATION
 - `getBipartizationAlgorithmName`: Get human-readable algorithm names
 - Bipartization algorithms: `MilpBipartization`, `BfsBipartization`, etc.
 """
-function ADMMBipartiteGraph(graph::MultiblockGraph, mbp::MultiblockProblem, algorithm::BipartizationAlgorithm)
+function ADMMBipartiteGraph(graph::MultiblockGraph, mbp::MultiblockProblem, algorithm::BipartizationAlgorithm, logLevel::Int64=1)
     if graph.isBipartite
-        @info "ADMMBipartiteGraph: The graph is already bipartite; skip bipartization algorithm."
+        @PDMOInfo logLevel "ADMMBipartiteGraph: The graph is already bipartite; skip bipartization algorithm."
         edgesSplitting = Dict{String, Tuple{Int64, Int64}}(edgeID=>(0,0) for edgeID in keys(graph.edges))
         return ADMMBipartiteGraph(graph, mbp, graph.colors, edgesSplitting)
     end 
@@ -791,7 +791,7 @@ function ADMMBipartiteGraph(graph::MultiblockGraph, mbp::MultiblockProblem, algo
     msg = Printf.@sprintf("ADMMBipartiteGraph: %s took %.2f seconds. \n", 
         getBipartizationAlgorithmName(algorithm),  
         time() - timeStart) 
-    @info msg 
+    @PDMOInfo logLevel msg 
 
     return ADMMBipartiteGraph(graph, mbp, nodesAssignment, edgesSplitting)
 end
@@ -855,8 +855,11 @@ Summary of ADMM Bipartitie Graph:
 - **Space Complexity**: O(1) - no additional memory allocation
 - **Output**: Minimal console output suitable for logging and analysis
 """
-function summary(admmGraph::ADMMBipartiteGraph)
-    @info "Summary of ADMM Bipartitie Graph:"
+function summary(admmGraph::ADMMBipartiteGraph, logLevel::Int64=1)
+    if logLevel < 1
+        return 
+    end 
+    @PDMOInfo logLevel "Summary of ADMM Bipartitie Graph:"
     println("    Number of nodes             = $(length(admmGraph.nodes))")
     println("    Parition size (left, right) = ($(length(admmGraph.left)), $(length(admmGraph.right)))")
     println("    Number of edges             = $(length(admmGraph.edges))")

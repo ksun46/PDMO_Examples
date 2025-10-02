@@ -7,4 +7,5 @@ This page documents the main solver interfaces and high-level functions in PDMO.
 ```@docs
 runBipartiteADMM
 runAdaPDM
+runBCD
 ```

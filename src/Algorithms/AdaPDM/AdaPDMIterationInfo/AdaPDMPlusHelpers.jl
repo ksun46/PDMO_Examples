@@ -73,7 +73,7 @@ function updateDualSolution!(mbp::MultiblockProblem, info::AdaPDMIterationInfo, 
         end  
 
         if iter == param.lineSearchMaxIter
-            @warn "AdaPDM: linesearch failed to terminate in $(param.lineSearchMaxIter) iterations."
+            @PDMOWarn param.logLevel "AdaPDM: linesearch failed to terminate in $(param.lineSearchMaxIter) iterations."
         end 
     end 
 

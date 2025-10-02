@@ -24,29 +24,9 @@ where a = coefficients is a vector of non-negative weights.
 - **Gradient**: ∇f(x) = [a₁ exp(x₁), a₂ exp(x₂), ..., aₙ exp(xₙ)]
 - **Hessian**: ∇²f(x) = diag(a₁ exp(x₁), a₂ exp(x₂), ..., aₙ exp(xₙ))
 
-# Examples
-```julia
 # Standard exponential function f(x) = exp(x₁) + exp(x₂)
-f = ComponentwiseExponentialFunction([1.0, 1.0])
-x = [0.0, 1.0]
-val = f(x)  # Returns exp(0) + exp(1) = 1 + e ≈ 3.718
-
 # Weighted exponential function f(x) = 2exp(x₁) + 3exp(x₂)
-f = ComponentwiseExponentialFunction([2.0, 3.0])
-x = [0.0, 0.0]
-val = f(x)  # Returns 2*1 + 3*1 = 5
-
 # Gradient computation
-grad = gradientOracle(f, x)  # Returns [2.0, 3.0]
-```
-
-# Applications
-- Exponential utility functions
-- Log-sum-exp approximations
-- Entropic regularization
-- Barrier methods in optimization
-- Statistical modeling (exponential families)
-
 # Note
 The proximal operator requires the Lambert W function and is not currently implemented.
 """
@@ -69,7 +49,8 @@ end
 
 isConvex(::Type{ComponentwiseExponentialFunction}) = true 
 isSmooth(::Type{ComponentwiseExponentialFunction}) = true 
-isProximal(::Type{ComponentwiseExponentialFunction}) = false  # TODO: LambertW function 
+isProximal(::Type{ComponentwiseExponentialFunction}) = false  # TODO: LambertW function
+isSupportedByJuMP(f::Type{<:ComponentwiseExponentialFunction}) = true 
 
 function (f::ComponentwiseExponentialFunction)(x::Vector{Float64})
     @assert length(f.coefficients) == length(x)
@@ -86,7 +67,7 @@ function gradientOracle(f::ComponentwiseExponentialFunction, x::Vector{Float64},
     y = similar(x)
     gradientOracle!(y, f, x, enableParallel)
     return y
-end 
+end
 
 
 # function proximalOracle!(y::Vector{Float64}, f::ComponentwiseExponentialFunction, x::Vector{Float64}, gamma::Float64 = 1.0, enableParallel::Bool=false)
@@ -99,4 +80,14 @@ end
 #     y = similar(x)
 #     proximalOracle!(y, f, x, gamma, enableParallel)
 #     return y
-# end 
+# end
+
+# JuMP support
+function JuMPAddSmoothFunction(f::ComponentwiseExponentialFunction, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    @assert length(f.coefficients) == length(var) "ComponentwiseExponentialFunction: coefficients length must match variable dimension"
+    
+    # Create nonlinear expression: ∑ᵢ aᵢ exp(xᵢ)
+    # This returns a nonlinear expression that JuMP can handle
+    # The actual expression will be handled by JuMP's nonlinear interface
+    return f.coefficients' * exp.(var)
+end 

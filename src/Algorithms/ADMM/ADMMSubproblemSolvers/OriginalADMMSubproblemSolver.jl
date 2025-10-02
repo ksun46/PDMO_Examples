@@ -109,7 +109,7 @@ solvers if needed.
 - `nodeID::String`: Identifier of the node to create a solver for
 - `admmGraph::ADMMBipartiteGraph`: The bipartite graph structure
 - `rho::Float64`: Current penalty parameter value
-
+- `logLevel::Int64`: Logging level
 **Returns**
 - `Bool`: `true` if a specialized solver was successfully created, `false` otherwise
 
@@ -147,7 +147,8 @@ end
 function selectNodalSolver(solver::OriginalADMMSubproblemSolver, 
     nodeID::String, 
     admmGraph::ADMMBipartiteGraph, 
-    rho::Float64)
+    rho::Float64, 
+    logLevel::Int64)
 
     SpecializedOriginalADMMSubproblemSolverList = [
         LinearSolver, 
@@ -157,10 +158,10 @@ function selectNodalSolver(solver::OriginalADMMSubproblemSolver,
 
     for nodalSolver in SpecializedOriginalADMMSubproblemSolverList 
         try 
-            solver.models[nodeID] = nodalSolver(nodeID, admmGraph, solver.edgeData, rho)
+            solver.models[nodeID] = nodalSolver(nodeID, admmGraph, solver.edgeData, rho, logLevel)
             return true 
         catch e 
-            # println("OriginalADMMSubproblemSolver: $e")
+            @PDMOError logLevel "OriginalADMMSubproblemSolver: error catched: $e."
             continue
         end 
     end 
@@ -210,7 +211,10 @@ if !success
 end
 ```
 """
-function initialize!(solver::OriginalADMMSubproblemSolver, admmGraph::ADMMBipartiteGraph, info::ADMMIterationInfo)
+function initialize!(solver::OriginalADMMSubproblemSolver,
+    admmGraph::ADMMBipartiteGraph, 
+    info::ADMMIterationInfo, 
+    logLevel::Int64)
     rho = info.rhoHistory[end][1]
 
     for (edgeID, edge) in admmGraph.edges 
@@ -218,8 +222,8 @@ function initialize!(solver::OriginalADMMSubproblemSolver, admmGraph::ADMMBipart
     end 
 
     for (nodeID, node) in admmGraph.nodes 
-        if selectNodalSolver(solver, nodeID, admmGraph, rho) == false 
-            @warn "OriginalADMMSubproblemSolver: No specialized solver found for node $nodeID."
+        if selectNodalSolver(solver, nodeID, admmGraph, rho, logLevel) == false 
+            @PDMOWarn logLevel "OriginalADMMSubproblemSolver: No specialized solver found for node $nodeID."
             return false 
         end 
         solver.augmentedLagrangianLinearCoefficientsBuffer[nodeID] = zero(node.val)
@@ -374,7 +378,7 @@ function updateDualResidualsInBuffer!(solver::OriginalADMMSubproblemSolver,
         info.primalBuffer[nodeID] .= 0.0 
     end 
 
-    @threads for nodeID in admmGraph.right
+    for nodeID in admmGraph.right
         # Calculate z^{k+1} - z^{k} and store in info.primalBuffer[nodeID]
         copyto!(info.primalBuffer[nodeID], info.primalSol[nodeID])
         axpy!(-1.0, info.primalSolPrev[nodeID], info.primalBuffer[nodeID])
@@ -478,38 +482,4 @@ function update!(solver::OriginalADMMSubproblemSolver, info::ADMMIterationInfo, 
         nodeID, model = pairs[idx]
         update!(model, info, admmGraph, rhoUpdated)
     end 
-end 
-
-"""
-    getADMMSubproblemSolverName(solver::OriginalADMMSubproblemSolver) -> String
-
-Get the human-readable name identifier for the Original ADMM subproblem solver.
-
-This function returns a string identifier that is used for logging, debugging,
-and user interface purposes. It helps identify which subproblem solver is being
-used in the ADMM algorithm.
-
-**Arguments**
-- `solver::OriginalADMMSubproblemSolver`: The solver instance
-
-**Returns**
-- `String`: The identifier "ORIGINAL_ADMM_SUBPROBLEM_SOLVER"
-
-**Usage Context**
-This function is commonly used in:
-- Algorithm initialization logging
-- Error messages and warnings
-- Performance reporting
-- Debugging output
-
-**Example**
-```julia
-solver = OriginalADMMSubproblemSolver()
-name = getADMMSubproblemSolverName(solver)
-println("Using solver: \$name")
-# Output: Using solver: ORIGINAL_ADMM_SUBPROBLEM_SOLVER
-```
-"""
-function getADMMSubproblemSolverName(solver::OriginalADMMSubproblemSolver)
-    return "ORIGINAL_ADMM_SUBPROBLEM_SOLVER"
 end 

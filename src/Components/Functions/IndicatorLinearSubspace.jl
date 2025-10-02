@@ -33,15 +33,6 @@ I_{Ax=b}(x) = \\begin{cases}
   * For full rank: y = x - A'(AA')^{-1}(Ax - b)
   * For rank deficient: y = x - A^+(Ax - b), where A^+ is the pseudoinverse
 - Numerical rank is determined using a tolerance based on machine epsilon
-
-# Example
-```julia
-A = sparse([1.0 2.0; 3.0 4.0])
-b = [1.0, 2.0]
-f = IndicatorLinearSubspace(A, b)
-x = [0.0, 0.0]
-proj = proximalOracle(f, x)  # Projects x onto the subspace Ax = b
-```
 """
 struct IndicatorLinearSubspace <: AbstractFunction 
     A::SparseMatrixCSC{Float64, Int64}
@@ -91,7 +82,8 @@ end
 # Override traits for IndicatorLinearSubspace
 isProximal(::Type{IndicatorLinearSubspace}) = true 
 isConvex(::Type{IndicatorLinearSubspace}) = true 
-isSet(::Type{IndicatorLinearSubspace}) = true 
+isSet(::Type{IndicatorLinearSubspace}) = true
+isSupportedByJuMP(::Type{IndicatorLinearSubspace}) = true 
 
 # function value
 function (f::IndicatorLinearSubspace)(x::NumericVariable, enableParallel::Bool=false)
@@ -135,13 +127,25 @@ function proximalOracle(f::IndicatorLinearSubspace, x::NumericVariable, gamma::F
     return y
 end
 
-function testIndicatorLinearSubspace(m, n)
-    for _ in 1:10 
-        myA = sparse(randn(m, n))
-        b = randn(m)
-        f = IndicatorLinearSubspace(myA, b)
-        x = randn(n)
-        y = proximalOracle(f, x)
-        @assert(norm(myA * y - b, 2) < 1e-6, "IndicatorLinearSubspace: proximal oracle failed.")
-    end
+# JuMP support
+function JuMPAddProximableFunction(g::IndicatorLinearSubspace, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    @assert length(var) == size(g.A, 2) "Variable dimension must match constraint matrix column dimension"
+    
+    # Add linear equality constraints: A * x = b
+    JuMP.@constraint(model, g.A * var .== g.b)
+    
+    return nothing  # Linear equality constraints don't contribute to objective
 end
+
+
+
+# function testIndicatorLinearSubspace(m, n)
+#     for _ in 1:10 
+#         myA = sparse(randn(m, n))
+#         b = randn(m)
+#         f = IndicatorLinearSubspace(myA, b)
+#         x = randn(n)
+#         y = proximalOracle(f, x)
+#         @assert(norm(myA * y - b, 2) < 1e-6, "IndicatorLinearSubspace: proximal oracle failed.")
+#     end
+# end

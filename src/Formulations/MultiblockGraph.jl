@@ -522,8 +522,11 @@ This function is useful for:
 The function calls `isMultiblockGraphBipartite` and `isMultiblockGraphConnected` internally
 to ensure the graph properties are up-to-date before printing.
 """
-function summary(graph::MultiblockGraph)
-    @info "Summary of Multiblock Graph: "
+function summary(graph::MultiblockGraph, logLevel::Int64=1)
+    if logLevel < 1
+        return 
+    end 
+    @PDMOInfo logLevel "Summary of Multiblock Graph: "
     nNodes = numberNodes(graph)
     nEdges = numberEdges(graph)
     println("    Number of nodes             = $(nNodes)")

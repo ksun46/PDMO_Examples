@@ -20,32 +20,6 @@ where ||x||₁ is the L1 norm (sum of absolute values).
 - **Subdifferential**: ∂f(x) = coefficient * sign(x) (element-wise)
 - **Proximal Operator**: Soft thresholding operator
   - prox_γf(x)ᵢ = sign(xᵢ) * max(0, |xᵢ| - γ*coefficient)
-
-# Examples
-```julia
-# Standard L1 norm
-f = ElementwiseL1Norm()
-x = [1.0, -2.0, 3.0]
-val = f(x)  # Returns |1| + |-2| + |3| = 6
-
-# Scaled L1 norm with coefficient 0.5
-f = ElementwiseL1Norm(0.5)
-x = [4.0, -6.0]
-val = f(x)  # Returns 0.5 * (4 + 6) = 5
-
-# Proximal operator (soft thresholding)
-f = ElementwiseL1Norm(1.0)
-x = [2.0, -3.0, 0.5]
-prox_x = proximalOracle(f, x, 1.0)  # γ = 1.0
-# Returns [1.0, -2.0, 0.0] (soft thresholding with threshold 1.0)
-```
-
-# Applications
-- Sparse regression (LASSO)
-- Compressed sensing
-- Feature selection
-- Regularization in machine learning
-- Signal denoising
 """
 struct ElementwiseL1Norm <: AbstractFunction 
     coefficient::Float64
@@ -61,6 +35,7 @@ end
 # override traits
 isProximal(f::Type{<:ElementwiseL1Norm}) = true 
 isConvex(f::Type{<:ElementwiseL1Norm}) = true
+isSupportedByJuMP(f::Type{<:ElementwiseL1Norm}) = true
 
 # function value
 function (f::ElementwiseL1Norm)(x::NumericVariable, enableParallel::Bool=false)
@@ -89,4 +64,25 @@ function proximalOracle(f::ElementwiseL1Norm, x::NumericVariable, gamma::Float64
     y = similar(x)
     proximalOracle!(y, f, x, gamma, enableParallel)   
     return y 
+end
+
+# JuMP support
+function JuMPAddProximableFunction(g::ElementwiseL1Norm, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    dim = length(var)
+    
+    # Create auxiliary variables to represent |x_i| (non-negative)
+    aux = JuMP.@variable(model, [k = 1:dim], lower_bound = 0.0)
+    
+    # Add constraints: aux[k] >= |var[k]|
+    # This is modeled as: aux[k] >= var[k] and aux[k] >= -var[k]
+    JuMP.@constraint(model, [k in 1:dim], var[k] <= aux[k])
+    JuMP.@constraint(model, [k in 1:dim], -var[k] <= aux[k])
+    
+    # Create objective term: coefficient * sum(aux) = coefficient * ||x||_1
+    obj_expr = JuMP.AffExpr(0.0)
+    for k in 1:dim 
+        JuMP.add_to_expression!(obj_expr, g.coefficient * aux[k])
+    end
+    
+    return obj_expr
 end

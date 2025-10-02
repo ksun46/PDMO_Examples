@@ -24,31 +24,6 @@ f(x) = +∞   otherwise
 - **Proximal Operator**: Element-wise projection onto the box
   - prox_f(x) = clamp(x, lb, ub) = max(lb, min(x, ub))
 
-# Examples
-```julia
-# Unit box constraint [-1, 1]ⁿ
-lb = [-1.0, -1.0]
-ub = [1.0, 1.0]
-f = IndicatorBox(lb, ub)
-x = [0.5, -0.5]
-val = f(x)  # Returns 0.0 since x is within bounds
-
-# Point outside the box
-x = [2.0, -2.0]
-val = f(x)  # Returns +∞ since x violates bounds
-
-# Proximal operator (projection onto box)
-f = IndicatorBox([-1.0, -1.0], [1.0, 1.0])
-x = [2.0, -2.0]
-prox_x = proximalOracle(f, x)  # Returns [1.0, -1.0] (clamped to bounds)
-```
-
-# Applications
-- Variable bounds in optimization
-- Constraint sets in quadratic programming
-- Image processing (pixel value bounds)
-- Control systems (actuator limits)
-- Portfolio optimization (position limits)
 """
 struct IndicatorBox <: AbstractFunction 
     lb::NumericVariable
@@ -69,6 +44,7 @@ end
 isProximal(f::Type{<:IndicatorBox}) = true 
 isConvex(f::Type{<:IndicatorBox}) = true
 isSet(f::Type{<:IndicatorBox}) = true
+isSupportedByJuMP(f::Type{<:IndicatorBox}) = true
 
 # function value
 function (f::IndicatorBox)(x::NumericVariable, enableParallel::Bool=false)
@@ -110,4 +86,35 @@ function proximalOracle(f::IndicatorBox, x::NumericVariable, gamma::Float64 = 1.
     # end
     
     return isa(x, Number) ? clamp(x, f.lb, f.ub) : clamp.(x, f.lb, f.ub)
-end 
+end
+
+# JuMP support
+function JuMPAddProximableFunction(g::IndicatorBox, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    # Set box bounds on the provided variables
+    if isa(g.lb, Number) && isa(g.ub, Number)
+        # Scalar bounds - apply to all variables
+        for k in 1:length(var)
+            if g.lb > -Inf 
+                JuMP.set_lower_bound(var[k], g.lb)
+            end 
+            if g.ub < Inf 
+                JuMP.set_upper_bound(var[k], g.ub)
+            end 
+        end
+    else
+        # Vector bounds - apply element-wise
+        @assert length(var) == length(g.lb) "IndicatorBox: variable dimension must match bounds dimension"
+        for k in 1:length(var)
+            if g.lb[k] > -Inf 
+                JuMP.set_lower_bound(var[k], g.lb[k])
+            end 
+            if g.ub[k] < Inf 
+                JuMP.set_upper_bound(var[k], g.ub[k])
+            end 
+        end
+    end
+    
+    return nothing  # Box constraints don't contribute to objective
+end
+
+ 

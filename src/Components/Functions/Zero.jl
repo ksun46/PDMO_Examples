@@ -15,33 +15,15 @@ f(x) = 0 for all x ∈ ℝⁿ
 - **Gradient**: ∇f(x) = 0 (zero vector/scalar)
 - **Proximal Operator**: prox_γf(x) = x (identity function)
 
-# Examples
-```julia
-# Zero function
-f = Zero()
-x = [1.0, 2.0, 3.0]
-val = f(x)  # Returns 0.0
-
-# Gradient is always zero
-grad = gradientOracle(f, x)  # Returns [0.0, 0.0, 0.0]
-
-# Proximal operator is identity
-prox_x = proximalOracle(f, x)  # Returns [1.0, 2.0, 3.0]
-```
-
-# Applications
-- Neutral elements in optimization
-- Baseline functions in algorithms
-- Simplified formulations
-- Algorithm testing and verification
-- Initialization in iterative methods
+See also: [`AbstractFunction`](@ref), [`proximalOracle!`](@ref), [`gradientOracle!`](@ref)
 """
-struct Zero <: AbstractFunction end 
+struct Zero <: AbstractFunction end
 
 # Override traits for Zero function
 isProximal(::Type{Zero}) = true 
 isSmooth(::Type{Zero}) = true 
-isConvex(::Type{Zero}) = true 
+isConvex(::Type{Zero}) = true
+isSupportedByJuMP(::Type{Zero}) = true 
 
 # function value
 (::Zero)(x::NumericVariable, enableParallel::Bool=false) = 0.0
@@ -82,4 +64,13 @@ function proximalOracle(f::Zero, x::NumericVariable, gamma::Float64 = 1.0, enabl
         proximalOracle!(y, f, x, gamma, enableParallel)
         return y
     end
+end
+
+# JuMP APIs  
+function JuMPAddProximableFunction(g::Zero, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    return nothing 
+end
+
+function JuMPAddSmoothFunction(f::Zero, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    return nothing
 end 

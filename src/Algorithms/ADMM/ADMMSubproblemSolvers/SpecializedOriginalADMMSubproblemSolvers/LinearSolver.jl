@@ -43,6 +43,7 @@ The solver uses adaptive factorization based on matrix properties:
 - `factorization::Union{SparseArrays.CHOLMOD.Factor{Float64}, Nothing}`: Matrix factorization
 - `isPositiveDefinite::Bool`: Whether system matrix is positive definite
 - `rhsBuffer::Vector{Float64}`: Working space for right-hand side vectors
+- `logLevel::Int64`: Logging level
 
 # Constructor Parameters
 - `nodeID::String`: Node identifier in the ADMM graph
@@ -79,8 +80,10 @@ mutable struct LinearSolver <: SpecializedOriginalADMMSubproblemSolver
 
     rhsBuffer::Vector{Float64}
 
+    logLevel::Int64
+
     """
-        LinearSolver(nodeID::String, edgeData::Dict{String, EdgeData}, admmGraph::ADMMBipartiteGraph)
+        LinearSolver(nodeID::String, edgeData::Dict{String, EdgeData}, admmGraph::ADMMBipartiteGraph, logLevel::Int64)
 
     Construct a linear solver for the specified ADMM node.
 
@@ -92,6 +95,7 @@ mutable struct LinearSolver <: SpecializedOriginalADMMSubproblemSolver
     - `nodeID::String`: Identifier of the ADMM node
     - `edgeData::Dict{String, EdgeData}`: Precomputed edge information
     - `admmGraph::ADMMBipartiteGraph`: Graph containing node and edge information
+    - `logLevel::Int64`: Logging level
 
     # Validation Process
     1. **Variable Type Check**: Ensure variable is vector-valued
@@ -111,7 +115,7 @@ mutable struct LinearSolver <: SpecializedOriginalADMMSubproblemSolver
     - Throws error if objective is not supported type
     - Throws error for unsupported mapping types
     """
-    function LinearSolver(nodeID::String, edgeData::Dict{String, EdgeData}, admmGraph::ADMMBipartiteGraph)
+    function LinearSolver(nodeID::String, edgeData::Dict{String, EdgeData}, admmGraph::ADMMBipartiteGraph, logLevel::Int64)
         node = admmGraph.nodes[nodeID]
         @assert(length(size(node.val)) == 1, "LinearSolver only supports vector variables")
         @assert(isa(node.g, Zero) || 
@@ -170,7 +174,8 @@ mutable struct LinearSolver <: SpecializedOriginalADMMSubproblemSolver
             systemMatrix, 
             factorization, 
             isPositiveDefinite, 
-            rhsBuffer)
+            rhsBuffer, 
+            logLevel)
     end
 end
 
@@ -231,7 +236,7 @@ function prepareLinearSolverData!(solver::LinearSolver, rho::Float64)
         if isa(e, PosDefException)
             solver.factorization = ldlt(isnothing(solver.Q) ? solver.AAdjointSelf : solver.systemMatrix)
             solver.isPositiveDefinite = false
-            @warn "LinearSolver: System matrix is not positive definite (likely positive semidefinite), using LDLT factorization"
+            @PDMOWarn solver.logLevel "LinearSolver: System matrix is not positive definite (likely positive semidefinite), using LDLT factorization"
         else
             rethrow(e)
         end
@@ -267,11 +272,12 @@ and initialization steps for convenience.
 function LinearSolver(nodeID::String,
     admmGraph::ADMMBipartiteGraph, 
     edgeData::Dict{String, EdgeData}, 
-    initialRho::Float64)
+    initialRho::Float64, 
+    logLevel::Int64)
 
-    solver = LinearSolver(nodeID, edgeData, admmGraph)
+    solver = LinearSolver(nodeID, edgeData, admmGraph, logLevel)
     prepareLinearSolverData!(solver, initialRho)
-    @info("OriginalADMMSubproblemSolve: ADMM node $nodeID initialized with LinearSolver.")
+    @PDMOInfo logLevel "OriginalADMMSubproblemSolve: ADMM node $nodeID initialized with LinearSolver."
     return solver
 end
 

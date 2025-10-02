@@ -77,10 +77,10 @@ function AdaptivePrimalDualMethod(mbp::MultiblockProblem, param::AbstractAdaPDMP
     startTime = time() 
     nThreads = Threads.nthreads() 
 
-    @info "######################################## Adaptive Primal-dual Method ########################################"
-    @info "Method = $(getAdaPDMName(param))"
+    @PDMOInfo param.logLevel "#"^40 * " Adaptive Primal-dual Method " * "#"^40
+    @PDMOInfo param.logLevel "Method = $(getAdaPDMName(param))"
     if checkCompositeProblemValidity!(mbp) == false 
-        error("AdaptiveProximalGradientMethod: the input problem is not a valid composite problem.")
+        @PDMOError param.logLevel "AdaptiveProximalGradientMethod: the input problem is not a valid composite problem."
         return
     end 
 
@@ -89,7 +89,7 @@ function AdaptivePrimalDualMethod(mbp::MultiblockProblem, param::AbstractAdaPDMP
     terminationCriteria = AdaPDMTerminationCriteria(param)
 
     msg = Printf.@sprintf("AdaPDM: initialization took %.2f seconds \n", time() - startTime)
-    @info msg 
+    @PDMOInfo param.logLevel msg 
 
     startTime = time()
     AdaPDMLog(0, info, param)

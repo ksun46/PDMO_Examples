@@ -147,7 +147,7 @@ Upon termination of the selected algorithm, one can look for primal solution and
 ## User Defined Smooth and Proximable Functions
 In addition to a set of built-in functions whose gradient or proximal oracles have been implemented, `PDMO.jl` supports user defined smooth and proximable functions. Consider the function 
 ```math
-    F(x) = x_1 + |x_2| + x_3^4, ~x = [x_1, x_2, x_3]^\top \in \mathbb{R}^3,
+    F(x) = x_1 + |x_2| + x_3^4, ~x = [x_1, x_2, x_3]^\top \in \R^3,
 ```
 which can be expressed as the sum of a smooth $f$ and a proximable $g$: 
 ```math 

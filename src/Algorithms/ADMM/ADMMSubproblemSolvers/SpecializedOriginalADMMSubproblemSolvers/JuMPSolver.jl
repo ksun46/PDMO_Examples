@@ -34,17 +34,16 @@ where:
 # Fields
 - `model::JuMP.AbstractModel`: JuMP optimization model
 - `var::Dict{String, Vector{JuMP.VariableRef}}`: JuMP variables by node
-- `aux::Dict{String, Vector{JuMP.VariableRef}}`: Auxiliary variables if needed
 - `objExpressions::Vector{Union{JuMP.AffExpr, JuMP.QuadExpr}}`: Linear/quadratic objective parts
-- `blockHasNonlinearSmoothFunction::Bool`: Flag for nonlinear objective detection
+- `nonlinearObjExpressions::Vector{Any}`: Nonlinear objective parts
 - `currentRho::Float64`: Current penalty parameter value
-
+- `logLevel::Int64`: Logging level
 # Constructor Parameters
 - `nodeID::String`: Node identifier in the ADMM graph
 - `admmGraph::ADMMBipartiteGraph`: The bipartite graph structure
 - `edgeData::Dict{String, EdgeData}`: Precomputed edge information
 - `rho::Float64`: Initial penalty parameter
-
+- `logLevel::Int64`: Logging level
 # Performance Characteristics
 - **Computational Complexity**: Depends on problem structure and Ipopt performance
 - **Memory Usage**: JuMP model storage plus solver workspace
@@ -60,13 +59,12 @@ where:
 mutable struct JuMPSolver <: SpecializedOriginalADMMSubproblemSolver 
     model::JuMP.AbstractModel
     var::Dict{String, Vector{JuMP.VariableRef}}
-    aux::Dict{String, Vector{JuMP.VariableRef}}
     objExpressions::Vector{Union{JuMP.AffExpr, JuMP.QuadExpr}} # Store linear/quadratic parts
-    blockHasNonlinearSmoothFunction::Bool                      # Track if nonlinear function exists
+    nonlinearObjExpressions::Vector{Any}                       # Store nonlinear parts
     currentRho::Float64 
-
+    logLevel::Int64
     """
-        JuMPSolver(nodeID::String, admmGraph::ADMMBipartiteGraph, edgeData::Dict{String, EdgeData}, rho::Float64)
+        JuMPSolver(nodeID::String, admmGraph::ADMMBipartiteGraph, edgeData::Dict{String, EdgeData}, rho::Float64, logLevel::Int64)
 
     Construct a JuMP-based solver for the specified ADMM node.
 
@@ -79,7 +77,7 @@ mutable struct JuMPSolver <: SpecializedOriginalADMMSubproblemSolver
     - `admmGraph::ADMMBipartiteGraph`: Graph containing node and edge information
     - `edgeData::Dict{String, EdgeData}`: Precomputed adjoint mappings
     - `rho::Float64`: Initial penalty parameter
-
+    - `logLevel::Int64`: Logging level
     # Model Construction Process
     1. **Solver Configuration**: Initialize Ipopt with appropriate settings
     2. **Function Analysis**: Decompose objective into linear/quadratic and nonlinear parts
@@ -94,7 +92,8 @@ mutable struct JuMPSolver <: SpecializedOriginalADMMSubproblemSolver
     - Stores objective expressions for efficient updates
     - Sets up nonlinear objective flag for solving
     """
-    function JuMPSolver(nodeID::String, admmGraph::ADMMBipartiteGraph, edgeData::Dict{String, EdgeData}, rho::Float64) 
+    function JuMPSolver(nodeID::String, admmGraph::ADMMBipartiteGraph, edgeData::Dict{String, EdgeData}, rho::Float64, logLevel::Int64) 
+    
         node = admmGraph.nodes[nodeID]
 
         model = JuMP.Model(Ipopt.Optimizer)
@@ -107,22 +106,21 @@ mutable struct JuMPSolver <: SpecializedOriginalADMMSubproblemSolver
         end 
 
         var = Dict{String, Vector{JuMP.VariableRef}}()
-        aux = Dict{String, Vector{JuMP.VariableRef}}()
-
         objExpressions = Vector{Union{JuMP.AffExpr, JuMP.QuadExpr}}()
+        nonlinearObjExpressions = Vector{Any}()
         
         # Use the same approach as in MultiblockProblem.jl
-        blockHasNonlinearSmoothFunction = addBlockVariableToJuMPModel!(model, 
+        addBlockVariableToJuMPModel!(model, 
             node.f, 
             node.g,
             node.val, 
             nodeID, 
             var, 
-            aux, 
-            objExpressions)
+            objExpressions,
+            nonlinearObjExpressions)
 
-        @info("OriginalADMMSubproblemSolve: ADMM node $nodeID initialized with JuMPSolver.")
-        return new(model, var, aux, objExpressions, blockHasNonlinearSmoothFunction, rho)
+        @PDMOInfo logLevel "OriginalADMMSubproblemSolve: ADMM node $nodeID initialized with JuMPSolver."
+        return new(model, var, objExpressions, nonlinearObjExpressions, rho, logLevel)
     end 
 end
 
@@ -270,10 +268,12 @@ function solve!(solver::JuMPSolver,
     end
 
     # Set the objective based on whether we have nonlinear terms
-    if solver.blockHasNonlinearSmoothFunction
-        # For nonlinear objectives, we need to build the full expression
-        nonlinearObj = nonlinearExpressionFromSmoothFunction(node.f, solver.var[nodeID])
-        nonlinearObj += ALQuadTerms
+    if !isempty(solver.nonlinearObjExpressions)
+        # For nonlinear objectives, combine all expressions
+        nonlinearObj = ALQuadTerms  # Start with linear/quadratic terms
+        for expr in solver.nonlinearObjExpressions
+            nonlinearObj += expr
+        end
 
         # Set nonlinear objective
         JuMP.@NLobjective(solver.model, Min, nonlinearObj)

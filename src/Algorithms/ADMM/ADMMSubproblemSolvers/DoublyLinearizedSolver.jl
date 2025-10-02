@@ -31,13 +31,14 @@ mutable struct DoublyLinearizedSolver <: AbstractADMMSubproblemSolver
     maxLeftMatrixAdjointSelfOperatorNorm::Float64
     maxRightMatrixAdjointSelfOperatorNorm::Float64
     
+    logLevel::Int64
     DoublyLinearizedSolver(; dualStepsize::Float64=1.0) = new(
         dualStepsize,
         1e-3, 1e-3, 
         # Dict{String, EdgeData}(), 
         Dict{String, NumericVariable}(),
         Dict{String, NumericVariable}(),
-        0.0, 0.0, 0.0, 0.0)
+        0.0, 0.0, 0.0, 0.0, 1)
 end
 
 """
@@ -69,7 +70,7 @@ function computeProximalStepsize!(solver::DoublyLinearizedSolver, rho::Float64)
     solver.proximalStepsizeAlpha = clamp(solver.proximalStepsizeAlpha, 1.0e-8, 1.0e-2)
     solver.proximalStepsizeBeta = clamp(solver.proximalStepsizeBeta, 1.0e-8, 1.0e-2)
     msg = Printf.@sprintf("DOUBLY_LINEARIZED_SOLVER: given rho = %.2e, estimated alpha = %.2e, beta = %.2e \n", rho, solver.proximalStepsizeAlpha, solver.proximalStepsizeBeta)
-    @info msg 
+    @PDMOWarn solver.logLevel msg 
 end 
 
 """
@@ -100,10 +101,11 @@ calculation. It prepares the solver for efficient iterative solving.
 - Buffer allocation and operator norm estimation are the most expensive operations
 - Lipschitz constant estimation uses sampling-based approximation
 """
-function initialize!(solver::DoublyLinearizedSolver, admmGraph::ADMMBipartiteGraph, info::ADMMIterationInfo)
+function initialize!(solver::DoublyLinearizedSolver, admmGraph::ADMMBipartiteGraph, info::ADMMIterationInfo, logLevel::Int64)
     # Pre-allocate buffers
     # timeStart = time() 
     rho = info.rhoHistory[end][1]
+    solver.logLevel = logLevel
     
     for (nodeID, node) in admmGraph.nodes 
         solver.primalBuffer[nodeID] = similar(node.val)

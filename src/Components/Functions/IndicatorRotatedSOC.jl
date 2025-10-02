@@ -51,63 +51,7 @@ The proximal operator (projection onto rotated SOC) is computed via transformati
    - ``v' = \\max(0, (s' - t')/2)``
    - ``w' = z'/\\sqrt{2}``
 
-# Implementation Details
-- Uses linear transformation to reduce to standard SOC projection
-- Enforces non-negativity constraints explicitly after transformation
-- Pre-computes √2 for numerical efficiency
-- Handles edge cases and maintains numerical stability
-
-# Applications
-- **Quadratic Programming**: Quadratic constraints ``x^T Q x \\leq t`` with ``Q \\succeq 0``
-- **Geometric Programming**: Posynomial constraints in convex form
-- **Robust Optimization**: Ellipsoidal uncertainty sets
-- **Signal Processing**: Power constraints in communication systems
-- **Finance**: Mean-variance portfolio optimization with transaction costs
-
-# Examples
-```julia
-# Create 4D rotated SOC
-f = IndicatorRotatedSOC(4)
-
-# Test point inside the cone
-x_in = [2.0, 1.0, 1.0, 1.0]  # ||[1.0, 1.0]||₂² = 2 ≤ 2·2·1 = 4
-@assert f(x_in) == 0.0  # Inside cone
-
-# Test point outside the cone
-x_out = [1.0, 1.0, 2.0, 2.0]  # ||[2.0, 2.0]||₂² = 8 > 2·1·1 = 2
-@assert f(x_out) == Inf  # Outside cone
-
-# Project onto cone
-x_proj = proximalOracle(f, x_out)
-@assert f(x_proj) == 0.0  # Projection is in cone
-
-# Boundary case: on the boundary
-x_bound = [1.0, 2.0, 2.0, 0.0]  # ||[2.0, 0.0]||₂² = 4 = 2·1·2
-@assert f(x_bound) == 0.0  # On boundary
-```
-
-# Geometric Interpretation
-The rotated second-order cone represents the set of points where the squared norm of the 
-vector part is bounded by twice the product of two non-negative scalars. Key properties:
-- **Quadratic constraint**: The defining constraint is quadratic in the variables
-- **Hyperbolic**: The boundary forms a hyperbolic surface in higher dimensions
-- **Geometric mean**: Related to the geometric mean constraint ``\\sqrt{uv} \\geq \\|w\\|_2/\\sqrt{2}``
-
-# Relationship to Standard SOC
-The rotated SOC is related to the standard SOC via the linear transformation:
-```math
-\\begin{pmatrix} u \\\\ v \\\\ w \\end{pmatrix} \\mapsto \\begin{pmatrix} u+v \\\\ u-v \\\\ \\sqrt{2}w \\end{pmatrix}
-```
-
 This transformation preserves the cone structure and enables efficient projection algorithms.
-
-# Performance Notes
-- Projection requires O(n) operations via SOC transformation
-- Memory allocation minimal - uses pre-allocated buffers
-- Numerically stable for well-conditioned problems
-- Handles degenerate cases (zero components) gracefully
-
-
 """
 struct IndicatorRotatedSOC <: AbstractFunction 
     dim::Int64 
@@ -120,7 +64,8 @@ end
 
 isProximal(::Type{IndicatorRotatedSOC}) = true 
 isConvex(::Type{IndicatorRotatedSOC}) = true 
-isSet(::Type{IndicatorRotatedSOC}) = true 
+isSet(::Type{IndicatorRotatedSOC}) = true
+isSupportedByJuMP(f::Type{<:IndicatorRotatedSOC}) = true 
 
 function (f::IndicatorRotatedSOC)(x::Vector{Float64}, enableParallel::Bool=false)
     @assert length(x) == f.dim "IndicatorRotatedSOC: Dimension of x must be equal to the dimension of the function"
@@ -177,4 +122,16 @@ function proximalOracle(f::IndicatorRotatedSOC, x::Vector{Float64}, gamma::Float
     y = similar(x)
     proximalOracle!(y, f, x, gamma, enableParallel)
     return y
+end
+
+# JuMP support
+function JuMPAddProximableFunction(g::IndicatorRotatedSOC, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    @assert length(var) == g.dim "Variable dimension must match rotated SOC dimension"
+    
+    # Add rotated second-order cone constraint: ||x[3:end]||_2^2 <= 2*x[1]*x[2], x[1] >= 0, x[2] >= 0
+    # JuMP format: [x[1]; x[2]; x[3:end]] in RotatedSecondOrderCone()
+    JuMP.@constraint(model, sum(var[k]^2 for k in 3:g.dim) <= 2 * var[1] * var[2])
+    JuMP.@constraint(model, var[1] >= 0.0)
+    JuMP.@constraint(model, var[2] >= 0.0)
+    return nothing  # Rotated SOC constraints don't contribute to objective
 end 

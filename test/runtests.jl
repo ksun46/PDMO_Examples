@@ -28,6 +28,16 @@ println("="^80)
             include("Components/Functions/testAbstractFunction.jl")
         end
         
+        @info "Testing Abstract Multiblock Function interface..."
+        @testset "AbstractMultiblockFunction Tests" begin
+            include("Components/Functions/testAbstractMultiblockFunction.jl")
+        end
+        
+        @info "Testing Quadratic Multiblock Function implementation..."
+        @testset "QuadraticMultiblockFunction Tests" begin
+            include("Components/Functions/testQuadraticMultiblockFunction.jl")
+        end
+        
         @info "Testing Abstract Mapping interface..."
         @testset "AbstractMapping Tests" begin
             include("Components/Mappings/testAbstractMapping.jl")
@@ -45,6 +55,11 @@ println("="^80)
         @info "Testing MultiblockProblem formulation..."
         @testset "MultiblockProblem Tests" begin
             include("Formulations/testMultiblockProblem.jl")
+        end
+        
+        @info "Testing Constraint to Quadratic Transformation..."
+        @testset "ConstraintToQuadratic Tests" begin
+            include("Formulations/testConstraintToQuadraticTransformation.jl")
         end
         
         @info "Testing MultiblockGraph representation..."
@@ -67,27 +82,37 @@ println("="^80)
     test_counter.formulation_tests = count_tests_in_testset(formulations_testset)
     @info "✅ FORMULATIONS TESTS COMPLETED" tests_executed=test_counter.formulation_tests
     
+    # ALGORITHMS TESTS
+    @info "🔧 ALGORITHMS TESTS" description="Testing optimization algorithms: BCD, ADMM, AdaPDM"
+    algorithms_testset = @testset verbose=true "Algorithms Tests" begin
+        
+        @info "Testing BCD Algorithm..."
+        @testset "BCD Tests" begin
+            include("Algorithms/BCD/testBCDTwoBlockQP.jl")
+        end
+        
+        # Future algorithm tests can be added here:
+        # @info "Testing ADMM Algorithm..."
+        # @testset "ADMM Tests" begin
+        #     include("Algorithms/ADMM/test_bipartite_admm.jl")
+        # end
+        # 
+        # @info "Testing AdaPDM Algorithm..."
+        # @testset "AdaPDM Tests" begin
+        #     include("Algorithms/AdaPDM/test_adapdm.jl")
+        # end
+    end
+    
+    # Count and report algorithms tests
+    test_counter.algorithm_tests = count_tests_in_testset(algorithms_testset)
+    @info "✅ ALGORITHMS TESTS COMPLETED" tests_executed=test_counter.algorithm_tests
+    
     # SKIPPED SECTIONS REPORTING
     @info "⏸️ SKIPPED TEST SECTIONS" description="The following test sections are currently disabled"
-    println("  Algorithms Tests (ADMM, AdaPDM) - 0 tests")
     println("  Utilities Tests (I/O utilities) - 0 tests")
     println("  └─ To enable these tests, uncomment the sections in runtests.jl")
     
-    test_counter.algorithm_tests = 0  # Currently skipped
     test_counter.utility_tests = 0    # Currently skipped
-    
-    # Commented out sections for future use:
-    # @testset verbose=true "Algorithms Tests" begin
-    #     @info "Testing ADMM Algorithm..."
-    #     @testset "ADMM Tests" begin
-    #         include("Algorithms/ADMM/test_bipartite_admm.jl")
-    #     end
-    #     
-    #     @info "Testing AdaPDM Algorithm..."
-    #     @testset "AdaPDM Tests" begin
-    #         include("Algorithms/AdaPDM/test_adapdm.jl")
-    #     end
-    # end
     
     # @testset verbose=true "Utilities Tests" begin
     #     @info "Testing I/O utilities..."

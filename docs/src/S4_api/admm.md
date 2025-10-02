@@ -1,6 +1,6 @@
 # ADMM
 
-This page documents the Alternating Direction Method of Multipliers (ADMM) algorithm components in PDMO.jl.
+This page documents the Alternating Direction Method of Multipliers (ADMM) algorithm components in `PDMO.jl`.
 
 ## Parameters and Iteration Information
 ```@docs

@@ -74,6 +74,10 @@ ADMMLog(iter, info, param, false, final=true)
 ```
 """
 function ADMMLog(iter, info::ADMMIterationInfo, param::ADMMParam, rhoUpdated::Bool = false; final::Bool = false) 
+    if param.logLevel < 1
+        return false  
+    end 
+
     if (final == false && iter > 0 && iter % param.logInterval != 0)
         return false 
     end 
@@ -190,8 +194,12 @@ ADMMLog(result, known_optimal_value)
 - Useful for debugging convergence issues
 - Essential for performance benchmarking
 """
-function ADMMLog(info::ADMMIterationInfo, trueObj::Float64=Inf)
-    @info "ADMM Summary: "
+function ADMMLog(info::ADMMIterationInfo, logLevel::Int64, trueObj::Float64=Inf)
+    if logLevel < 1
+        return
+    end 
+
+    @PDMOInfo logLevel "ADMM Summary: "
     Printf.@printf("    Solver Status   =   %s\n", getTerminationStatus(info.terminationStatus))
     Printf.@printf("    Objective       = %12.4e\n", info.obj[end])
     Printf.@printf("    Pres (L2)       = %12.4e\n", info.presL2[end])

@@ -101,15 +101,15 @@ function BipartiteADMM(admmGraph::ADMMBipartiteGraph, param::ADMMParam)
     startTime = time()
     nThreads = Threads.nthreads()
 
-    @info "######################################## Bipartite ADMM ########################################"
+    @PDMOInfo param.logLevel "#"^40 * " Bipartite ADMM " * "#"^40
     # initialize ADMM iteration info 
     info = ADMMIterationInfo(admmGraph, param.initialRho) 
     
     # initialize subproblem solver 
-    if initialize!(param.solver, admmGraph, info) == false 
-        @warn "ADMM: failed to initialize $(getADMMSubproblemSolverName(param.solver)); set subproblem solver to DOUBLY_LINEARIZED_SOLVER instead."
+    if initialize!(param.solver, admmGraph, info, param.logLevel) == false 
+        @PDMOWarn param.logLevel "ADMM: failed to initialize $(getADMMSubproblemSolverName(param.solver)); set subproblem solver to DOUBLY_LINEARIZED_SOLVER instead."
         param.solver = DoublyLinearizedSolver()
-        initialize!(param.solver, admmGraph, info)
+        initialize!(param.solver, admmGraph, info, param.logLevel)
     end 
 
     # initialize accelerator 
@@ -121,12 +121,10 @@ function BipartiteADMM(admmGraph::ADMMBipartiteGraph, param::ADMMParam)
     # initialize termination criteria 
     terminationCriteria = ADMMTerminationCriteria(param, info)    
     
-    @info "ADMM: subproblem solver = $(getADMMSubproblemSolverName(param.solver))"
-    @info "ADMM: accelerator = $(getADMMAcceleratorName(param.accelerator))"
-    @info "ADMM: adapter = $(getADMMAdapterName(param.adapter))"
-
-    msg = Printf.@sprintf("ADMM: initialization took %.2f seconds \n", time() - startTime)
-    @info msg 
+    @PDMOInfo param.logLevel "ADMM: subproblem solver = $(getADMMSubproblemSolverName(param.solver))"
+    @PDMOInfo param.logLevel "ADMM: accelerator = $(getADMMAcceleratorName(param.accelerator))"
+    @PDMOInfo param.logLevel "ADMM: adapter = $(getADMMAdapterName(param.adapter))"
+    @PDMOInfo param.logLevel Printf.@sprintf("ADMM: initialization took %.2f seconds \n", time() - startTime)
    
     startTime = time()
     

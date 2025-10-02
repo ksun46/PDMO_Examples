@@ -1,10 +1,10 @@
 """
     QuadraticFunction(Q::SparseMatrixCSC{Float64, Int64}, q::Vector{Float64}, r::Float64)
 
-Represents a quadratic function of the form f(x) = (1/2)x'Qx + q'x + r.
+Represents a quadratic function of the form f(x) = x'Qx + q'x + r.
 
 # Mathematical Definition
-f(x) = (1/2)x'Qx + q'x + r
+f(x) = x'Qx + q'x + r
 
 where:
 - Q is a symmetric matrix (Hessian)
@@ -26,29 +26,9 @@ where:
 - **Proximal**: No, proximal operator not implemented (requires solving linear system)
 
 # Mathematical Properties
-- **Gradient**: ∇f(x) = Qx + Q'x + q = (Q + Q')x + q
+- **Gradient**: ∇f(x) = (Q + Q')x + q
 - **Hessian**: ∇²f(x) = Q + Q'
 
-# Examples
-```julia
-# Quadratic function f(x) = x₁² + x₂² + x₁ + 2x₂ + 3
-Q = sparse([1.0 0.0; 0.0 1.0])  # Identity matrix
-q = [1.0, 2.0]
-r = 3.0
-f = QuadraticFunction(Q, q, r)
-x = [1.0, 1.0]
-val = f(x)  # Returns 1 + 1 + 1 + 2 + 3 = 8
-
-# Zero quadratic function
-f = QuadraticFunction(2)  # f(x) = 0 for x ∈ ℝ²
-```
-
-# Applications
-- Quadratic programming
-- Least squares problems
-- Trust region methods
-- Newton's method approximations
-- Model predictive control
 """
 struct QuadraticFunction <: AbstractFunction 
     Q::SparseMatrixCSC{Float64, Int64}
@@ -68,6 +48,7 @@ QuadraticFunction(n::Int64) = QuadraticFunction(spzeros(n,n), zeros(n), 0.0)
 
 isSmooth(f::Type{<:QuadraticFunction}) = true
 isConvex(f::Type{<:QuadraticFunction}) = true
+isSupportedByJuMP(f::Type{<:QuadraticFunction}) = true
 
 # function value
 function (f::QuadraticFunction)(x::NumericVariable, enableParallel::Bool=false)
@@ -92,4 +73,24 @@ function gradientOracle(f::QuadraticFunction, x::NumericVariable, enableParallel
     y = similar(x)
     gradientOracle!(y, f, x, enableParallel)
     return y
+end
+
+# function JuMPAddProximableFunction(f::QuadraticFunction, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+#     @assert length(var) == size(f.Q, 1) == size(f.Q, 2) "QuadraticFunction: variable dimension must match Q dimension"
+#     # Create quadratic expression: x'Qx + q'x + r
+#     obj_expr = JuMP.QuadExpr()
+#     JuMP.add_to_expression!(obj_expr, var' * f.Q * var)
+#     JuMP.add_to_expression!(obj_expr, f.q' * var + f.r)
+    
+#     return obj_expr
+# end
+
+function JuMPAddSmoothFunction(f::QuadraticFunction, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    @assert length(var) == size(f.Q, 1) == size(f.Q, 2) "QuadraticFunction: variable dimension must match Q dimension"
+    # Create quadratic expression: x'Qx + q'x + r
+    obj_expr = JuMP.QuadExpr()
+    JuMP.add_to_expression!(obj_expr, var' * f.Q * var)
+    JuMP.add_to_expression!(obj_expr, f.q' * var + f.r)
+    
+    return obj_expr
 end

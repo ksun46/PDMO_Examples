@@ -20,7 +20,8 @@ end
 # Override traits for IndicatorSumOfNVariables
 isProximal(::Type{IndicatorSumOfNVariables}) = true 
 isConvex(::Type{IndicatorSumOfNVariables}) = true
-isSet(::Type{IndicatorSumOfNVariables}) = true 
+isSet(::Type{IndicatorSumOfNVariables}) = true
+isSupportedByJuMP(f::Type{<:IndicatorSumOfNVariables}) = true 
 
 
 """
@@ -159,4 +160,20 @@ function proximalOracle(f::IndicatorSumOfNVariables, x::NumericVariable, gamma::
         proximalOracle!(y, f, x, gamma, enableParallel)
         return y
     end
+end
+
+# JuMP support
+function JuMPAddProximableFunction(g::IndicatorSumOfNVariables, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    # Create unconstrained variables
+    dim = length(var)
+    
+    subvectorDim = length(g.rhs)
+    numberVariables = g.numberVariables
+    @assert dim == subvectorDim * numberVariables "JuMPAddProximableFunction of $(typeof(g)): Dimension must equal length(rhs) * numberVariables"
+        
+    # Add constraints: sum over blocks for each element
+    JuMP.@constraint(model, [k in 1:subvectorDim],
+        sum(var[(idx-1) * subvectorDim + k] for idx in 1:numberVariables) == g.rhs[k])
+    
+    return nothing  # Sum of N variables constraints don't contribute to objective
 end

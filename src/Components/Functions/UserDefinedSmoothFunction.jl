@@ -20,48 +20,28 @@ evaluation and its gradient, enabling integration with gradient-based algorithms
 - **Function evaluation**: f(x) provided by user
 - **Gradient**: ∇f(x) provided by user
 
-# Examples
-```julia
 # Simple Quadratic Function
 # f(x) = x₁² + 2x₂² + x₁x₂
 func = x -> x[1]^2 + 2*x[2]^2 + x[1]*x[2]
 gradientFunc = x -> [2*x[1] + x[2], 4*x[2] + x[1]]
-f = UserDefinedSmoothFunction(func, gradientFunc, true)  # convex=true
-
 # Non-convex Function
 # f(x) = sin(x₁) + cos(x₂)
 func = x -> sin(x[1]) + cos(x[2])
 gradientFunc = x -> [cos(x[1]), -sin(x[2])]
-f = UserDefinedSmoothFunction(func, gradientFunc, false)  # convex=false
-
 # Rosenbrock Function (classic optimization test function)
 # f(x) = (1-x₁)² + 100(x₂-x₁²)²
 func = x -> (1-x[1])^2 + 100*(x[2]-x[1]^2)^2
 gradientFunc = x -> [-2*(1-x[1]) - 400*x[1]*(x[2]-x[1]^2), 200*(x[2]-x[1]^2)]
-f = UserDefinedSmoothFunction(func, gradientFunc, false)  # non-convex
-```
-
 # Integration with Bipartization
 ```julia
 # In your optimization problems
 block_x = BlockVariable(xID)
-block_x.f = UserDefinedSmoothFunction(myFunc, myGradient, true)
-addBlockVariable!(nlp, block_x)
-```
-
 # Requirements
 - `func(x)` must return a Float64 value
 - `gradientFunc(x)` must return a gradient of the same type as x
 - Both functions must be consistent with the mathematical definition
 - The gradient must satisfy: ∇f(x) = lim_{h→0} [f(x+h) - f(x)]/h
 - For correctness, consider using automatic differentiation tools to compute gradients
-
-# Applications
-- Custom objective functions
-- Domain-specific regularization terms
-- Physics-informed optimization
-- Machine learning loss functions
-- Engineering design optimization
 """
 struct UserDefinedSmoothFunction <: AbstractFunction
     func::Function
@@ -109,16 +89,11 @@ end
 # # f(x) = x₁² + 2x₂² + x₁x₂
 # func = x -> x[1]^2 + 2*x[2]^2 + x[1]*x[2]
 # gradientFunc = x -> [2*x[1] + x[2], 4*x[2] + x[1]]
-# f = UserDefinedSmoothFunction(func, gradientFunc, true)  # convex=true
-#
 # # Non-convex Function
 # # f(x) = sin(x₁) + cos(x₂)
 # func = x -> sin(x[1]) + cos(x[2])
 # gradientFunc = x -> [cos(x[1]), -sin(x[2])]
-# f = UserDefinedSmoothFunction(func, gradientFunc, false)  # convex=false
-#
 # # Integration with Bipartization
 # # In your optimization problems
 # block_x = BlockVariable(xID)
-# block_x.f = UserDefinedSmoothFunction(myFunc, myGradient, true)
 # addBlockVariable!(nlp, block_x) 

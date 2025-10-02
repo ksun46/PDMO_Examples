@@ -10,6 +10,11 @@ include("../../test_helper.jl")
         # Test if AbstractFunction type is defined and usable
         @test AbstractFunction isa Type
         
+        # Test inheritance hierarchy
+        if @isdefined(AbstractMultiblockFunction)
+            @test AbstractMultiblockFunction <: AbstractFunction
+        end
+        
         # Test Zero function (which should exist)
         if @isdefined(Zero)
             zero_func = Zero()

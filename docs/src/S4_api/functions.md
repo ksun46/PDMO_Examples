@@ -11,6 +11,7 @@ isSmooth
 isProximal
 isConvex
 isSet
+isSupportedByJuMP
 ```
 
 ## First Order Oracles
@@ -25,6 +26,11 @@ proximalOracleOfConjugate!
 estimateLipschitzConstant
 ```
 
+## JuMP Modeling 
+```@docs 
+JuMPAddProximableFunction
+JuMPAddSmoothFunction
+```
 ## Functions implemented in `PDMO.jl`
 ### Basic Functions
 ```@docs

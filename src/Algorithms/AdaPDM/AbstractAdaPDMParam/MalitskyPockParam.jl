@@ -28,6 +28,7 @@ convex functions and A is a linear operator.
 - `maxIter::Int64`: Maximum number of algorithm iterations
 - `logInterval::Int64`: Interval for logging algorithm progress
 - `timeLimit::Float64`: Time limit in seconds
+- `logLevel::Int64`: Level for logging information
 
 # Algorithm Theory
 The Malitsky-Pock algorithm uses adaptive step sizes with the following key features:
@@ -72,6 +73,7 @@ mutable struct MalitskyPockParam <: AbstractAdaPDMParam
     maxIter::Int64           # Maximum number of iterations
     logInterval::Int64       # Interval for logging information
     timeLimit::Float64       # Time limit in seconds
+    logLevel::Int64          # Level for logging information
 end
 
 
@@ -107,7 +109,7 @@ operator norms or Lipschitz constants are unknown or difficult to estimate.
 - `maxIter::Int64=10000`: Maximum number of algorithm iterations
 - `logInterval::Int64=1000`: Logging interval for progress reporting
 - `timeLimit::Float64=3600.0`: Time limit in seconds
-
+- `logLevel::Int64=1`: Level for logging information
 # Returns
 - `MalitskyPockParam`: Configured parameters for the Malitsky-Pock algorithm
 
@@ -177,7 +179,8 @@ function MalitskyPockParam(mbp::MultiblockProblem;
     lineSearchMaxIter::Int64=1000,
     maxIter::Int64=10000,
     logInterval::Int64=1000,
-    timeLimit::Float64=3600.0)
+    timeLimit::Float64=3600.0,
+    logLevel::Int64=1)
 
     if checkCompositeProblemValidity!(mbp) == false 
         error("AdaPDMParam: the input problem is not a valid composite problem.")
@@ -201,6 +204,7 @@ function MalitskyPockParam(mbp::MultiblockProblem;
         lineSearchMaxIter,
         maxIter, 
         logInterval, 
-        timeLimit)
+        timeLimit, 
+        logLevel)
 
 end 

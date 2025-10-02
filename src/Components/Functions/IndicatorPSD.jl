@@ -38,44 +38,6 @@ The proximal operator (projection onto PSD cone) is computed via:
 2. **Eigendecomposition**: Compute ``\\bar{X} = Q\\Lambda Q^T``
 3. **Projection**: Set negative eigenvalues to zero: ``\\Lambda_+ = \\max(\\Lambda, 0)``
 4. **Reconstruction**: Return ``\\text{proj}(X) = Q\\Lambda_+ Q^T``
-
-# Implementation Details
-- Supports both dense (`Matrix{Float64}`) and sparse (`SparseMatrixCSC{Float64}`) matrices
-- Uses symmetric eigendecomposition for numerical stability
-- Enforces perfect symmetry in output to avoid numerical artifacts
-- Tolerances: `ZeroTolerance` for symmetry, `FeasTolerance` for positive semidefiniteness
-
-# Applications
-- **Semidefinite Programming**: Constraint X ⪰ 0 in optimization
-- **Covariance Estimation**: Ensuring positive semidefinite covariance matrices
-- **Gram Matrix Constraints**: In kernel methods and matrix completion
-- **Relaxations**: Convex relaxation of rank constraints
-
-# Examples
-```julia
-# Create 3×3 PSD indicator
-f = IndicatorPSD(3)
-
-# Test with positive semidefinite matrix
-X_psd = [2.0 1.0 0.0; 1.0 2.0 0.0; 0.0 0.0 1.0]
-@assert f(X_psd) == 0.0  # In PSD cone
-
-# Test with indefinite matrix
-X_indef = [1.0 2.0; 2.0 1.0]  # Has negative eigenvalue
-@assert f(X_indef) == Inf  # Not in PSD cone
-
-# Project indefinite matrix onto PSD cone
-X_proj = proximalOracle(f, X_indef)
-@assert f(X_proj) == 0.0  # Projection is PSD
-```
-
-# Performance Notes
-- Eigendecomposition is O(n³) - dominant computational cost
-- Dense matrices preferred for efficiency; sparse matrices converted internally
-- Pre-allocated buffers reduce memory allocation overhead
-- Symmetric views used when possible to exploit structure
-
-
 """
 struct IndicatorPSD <: AbstractFunction 
     dim::Int64  # matrix dimension (n×n)

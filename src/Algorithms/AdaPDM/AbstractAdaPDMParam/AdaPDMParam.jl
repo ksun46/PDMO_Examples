@@ -17,6 +17,7 @@ Parameters for the Adaptive Primal-Dual Method.
 - `maxIter::Int64`: Maximum number of iterations
 - `logInterval::Int64`: Interval for logging information
 - `timeLimit::Float64`: Time limit in seconds
+- `logLevel::Int64`: Level for logging information
 """
 mutable struct AdaPDMParam <: AbstractAdaPDMParam
     # parameters for the algorithm 
@@ -37,6 +38,7 @@ mutable struct AdaPDMParam <: AbstractAdaPDMParam
     maxIter::Int64           # Maximum number of iterations
     logInterval::Int64       # Interval for logging information
     timeLimit::Float64       # Time limit in seconds
+    logLevel::Int64          # Level for logging information
 end
 
 """
@@ -57,6 +59,7 @@ Construct a parameter object for the Adaptive Primal-Dual Method.
 - `maxIter::Int64=10000`: Maximum number of iterations.
 - `logInterval::Int64=1000`: Interval for logging information.
 - `timeLimit::Float64=3600.0`: Time limit in seconds.
+- `logLevel::Int64=1`: Level for logging information.
 
 # Returns
 - `AdaPDMParam`: A parameter object for the Adaptive Primal-Dual Method.
@@ -75,7 +78,8 @@ function AdaPDMParam(mbp::MultiblockProblem;
     dresTolLInf::Float64=1e-6,
     maxIter::Int64=10000,
     logInterval::Int64=1000,
-    timeLimit::Float64=3600.0)
+    timeLimit::Float64=3600.0, 
+    logLevel::Int64=1)
     
     if checkCompositeProblemValidity!(mbp) == false 
         error("AdaPDMParam: the input problem is not a valid composite problem.")
@@ -102,5 +106,6 @@ function AdaPDMParam(mbp::MultiblockProblem;
         dresTolLInf, 
         maxIter, 
         logInterval, 
-        timeLimit)
+        timeLimit, 
+        logLevel)
 end

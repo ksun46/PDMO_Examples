@@ -16,8 +16,9 @@ makedocs(
         "Home" => "index.md",
         "Getting Started" => "S1_getting_started.md",
         "Algorithms" => [
-            "AdaPDM" => "S2_algorithms/AdaPDM.md",
-            "ADMM" => "S2_algorithms/ADMM.md"
+            "ADMM" => "S2_algorithms/ADMM.md",
+            "AdaPDM" => "S2_algorithms/AdaPDM.md", 
+            "BCD" => "S2_algorithms/BCD.md"
         ],
         "Examples" => [
             "Distributed OPF" => "S3_examples/DistributedOPF.md",
@@ -27,19 +28,20 @@ makedocs(
             "Least L1 Norm" => "S3_examples/LeastL1Norm.md"
         ],
         "API Reference" => [
-            "Main" => "S4_api/main.md",
-            "Formulations" => "S4_api/formulations.md",
-            "Functions" => "S4_api/functions.md",
-            "Mappings" => "S4_api/mappings.md", 
-            "ADMM" => "S4_api/admm.md",
-            "AdaPDM" => "S4_api/pdm.md"
+            "Main Algorithm Interface" => "S4_api/main.md"
+            , "Functions" => "S4_api/functions.md"
+            , "Mappings" => "S4_api/mappings.md"
+            , "Formulations" => "S4_api/formulations.md"
+            , "ADMM Components" => "S4_api/admm.md"
+            , "AdaPDM Components" => "S4_api/pdm.md"
+            , "BCD Components" => "S4_api/bcd.md"
+            # , "Utilities" => "S4_api/utilities.md"
         ]
     ]
 )
 
-# Deploy documentation to GitHub Pages
-deploydocs(
-    repo = "github.com/alibaba-damo-academy/PDMO.jl.git",
-    push_preview = true,
-    devbranch = "main"
-) 
+# Comment out deploydocs for local development
+# deploydocs(
+#     repo = "github.com/username/PDMO.jl.git",
+#     push_preview = true
+# ) 

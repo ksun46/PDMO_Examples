@@ -39,6 +39,10 @@ AdaPDMLog(150, info, param; final=true)
 See also: `AdaPDMIterationInfo`, `AbstractAdaPDMParam`
 """
 function AdaPDMLog(iter, info::AdaPDMIterationInfo, param::AbstractAdaPDMParam; final::Bool = false) 
+    if param.logLevel < 1
+        return false  
+    end 
+
     if (final == false && iter > 0 && iter % param.logInterval != 0)
         return false 
     end 
@@ -124,8 +128,12 @@ AdaPDM Summary:
 
 See also: `AdaPDMIterationInfo`, `getTerminationStatus`
 """
-function AdaPDMLog(info::AdaPDMIterationInfo, trueObj::Float64=Inf)
-    @info "AdaPDM Summary: "
+function AdaPDMLog(info::AdaPDMIterationInfo, logLevel::Int64, trueObj::Float64=Inf)
+    if logLevel < 1
+        return  
+    end 
+
+    @PDMOInfo logLevel "AdaPDM Summary: "
     Printf.@printf("    Solver Status   =   %s\n", getTerminationStatus(info.terminationStatus))
     Printf.@printf("    Lagrangian      = %12.4e\n", info.lagrangianObj[end])
     Printf.@printf("    Pres (L2)       = %12.4e\n", info.presL2[end])

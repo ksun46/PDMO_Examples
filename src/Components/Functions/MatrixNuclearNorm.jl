@@ -17,15 +17,6 @@ where σᵢ(W) are the singular values of W, b ∈ ℝᵐ₊ is a vector of posi
 - Proximal Operator: Component-wise soft thresholding of singular values
 - Convex: No. Only when all entries of b are equal
 
-# Example
-```julia
-# For a 3×2 matrix, we need 2 weights (min(3,2) = 2)
-b = [1.0, 2.0]  # Different weights for different singular values
-f = MatrixNuclearNorm(b, 3, 2)
-X = [1.0 2.0; 3.0 4.0; 5.0 6.0]
-val = f(X)  # Computes weighted nuclear norm
-```
-
 Note: The number of weights in b must equal min(rows, cols), as this is the 
 maximum possible number of non-zero singular values.
 """

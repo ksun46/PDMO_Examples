@@ -41,57 +41,6 @@ For a point ``x`` with radius component ``r`` and vector component ``v``:
 1. If ``\\|v\\|_2 \\leq r``: ``x`` is already in the cone, so ``\\text{proj}(x) = x``
 2. If ``\\|v\\|_2 \\leq -r``: ``x`` is in the polar cone, so ``\\text{proj}(x) = 0``
 3. Otherwise: ``\\text{proj}(x) = \\frac{\\|v\\|_2 + r}{2\\|v\\|_2}\\begin{pmatrix} v \\\\ \\|v\\|_2 \\end{pmatrix}``
-
-# Implementation Details
-- Projection formula handles both `radiusIndex = 1` and `radiusIndex = dim` cases
-- Uses tolerance `FeasTolerance` for membership testing
-- Efficient O(n) implementation avoiding matrix operations
-- Handles edge cases (zero norm, negative radius) robustly
-
-# Applications
-- **Second-Order Cone Programming (SOCP)**: Constraint ``\\|Ax + b\\|_2 \\leq c^T x + d``
-- **Robust Optimization**: Uncertainty sets and robust constraints
-- **Signal Processing**: Beamforming and antenna array design
-- **Machine Learning**: Support vector machines with nonlinear kernels
-- **Control Theory**: Linear matrix inequalities and stability analysis
-
-# Examples
-```julia
-# Create 3D SOC with radius at last position
-f = IndicatorSOC(3, 3)
-
-# Test point inside the cone
-x_in = [0.5, 0.3, 1.0]  # ||[0.5, 0.3]||₂ = 0.583 < 1.0
-@assert f(x_in) == 0.0  # Inside cone
-
-# Test point outside the cone  
-x_out = [2.0, 1.0, 1.0]  # ||[2.0, 1.0]||₂ = 2.236 > 1.0
-@assert f(x_out) == Inf  # Outside cone
-
-# Project onto cone
-x_proj = proximalOracle(f, x_out)
-@assert f(x_proj) == 0.0  # Projection is in cone
-
-# Alternative: radius at first position
-f_alt = IndicatorSOC(3, 1)
-x_alt = [1.0, 0.5, 0.3]  # ||[0.5, 0.3]||₂ = 0.583 < 1.0
-@assert f_alt(x_alt) == 0.0  # Inside cone
-```
-
-# Geometric Interpretation
-The second-order cone is the set of points where the Euclidean norm of the vector part 
-is bounded by the scalar radius part. It has several equivalent representations:
-- **Ice cream cone**: The familiar "ice cream cone" shape in 3D
-- **Epigraph**: Epigraph of the Euclidean norm function
-- **Intersection**: Can be represented as intersection of half-spaces
-
-# Performance Notes
-- Projection requires O(n) operations (single norm computation)
-- Memory allocation minimal - uses in-place operations when possible
-- Numerically stable for well-conditioned problems
-- Handles degenerate cases (zero radius, zero vector) gracefully
-
-
 """
 struct IndicatorSOC <: AbstractFunction 
     dim::Int64 
@@ -105,7 +54,9 @@ end
 
 isProximal(::Type{IndicatorSOC}) = true 
 isConvex(::Type{IndicatorSOC}) = true 
-isSet(::Type{IndicatorSOC}) = true 
+isSet(::Type{IndicatorSOC}) = true
+isSupportedByJuMP(f::Type{<:IndicatorSOC}) = true
+ 
 
 function (f::IndicatorSOC)(x::Vector{Float64}, enableParallel::Bool=false)
     @assert length(x) == f.dim "Dimension of x must be equal to the dimension of the function"
@@ -143,3 +94,29 @@ function proximalOracle(f::IndicatorSOC, x::Vector{Float64}, gamma::Float64 = 1.
     proximalOracle!(y, f, x, gamma, enableParallel)
     return y
 end
+
+# JuMP support
+function JuMPAddProximableFunction(g::IndicatorSOC, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    @assert length(var) == g.dim "Variable dimension must match SOC dimension"
+    
+    # Add second-order cone constraint based on radius position
+    if g.radiusIndex == 1
+        # Constraint: ||x[2:end]||_2 <= x[1]
+        # JuMP format: [x[1]; x[2:end]] in SecondOrderCone()
+        # JuMP.@constraint(model, [var[1]; var[2:end]] in JuMP.SecondOrderCone())
+        JuMP.@constraint(model, dot(var[2:end], var[2:end]) <= var[1]^2)
+        JuMP.@constraint(model, var[1] >= 0.0)
+    else
+        # Constraint: ||x[1:end-1]||_2 <= x[end]
+        # JuMP format: [x[end]; x[1:end-1]] in SecondOrderCone()
+        # JuMP.@constraint(model, [var[end]; var[1:end-1]] in JuMP.SecondOrderCone())
+        JuMP.@constraint(model, dot(var[1:end-1], var[1:end-1]) <= var[end]^2)
+        JuMP.@constraint(model, var[end] >= 0.0)
+    end
+    
+    return nothing  # SOC constraints don't contribute to objective
+end
+
+
+
+

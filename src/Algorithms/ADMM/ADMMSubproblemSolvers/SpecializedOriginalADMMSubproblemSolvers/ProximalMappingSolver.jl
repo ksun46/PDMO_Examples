@@ -45,7 +45,7 @@ scaled identity operations:
 - `proximalPoint::NumericVariable`: Working space for proximal center z
 - `currentRho::Float64`: Current penalty parameter ρ
 - `gamma::Float64`: Proximal parameter γ = 1/(ρm²)
-
+- `logLevel::Int64`: Logging level
 # Constructor Parameters
 - `nodeID::String`: Node identifier in the ADMM graph
 - `admmGraph::ADMMBipartiteGraph`: The bipartite graph structure
@@ -70,9 +70,9 @@ mutable struct ProximalMappingSolver <: SpecializedOriginalADMMSubproblemSolver
     proximalPoint::NumericVariable 
     currentRho::Float64 
     gamma::Float64
-
+    logLevel::Int64
     """
-        ProximalMappingSolver(nodeID::String, admmGraph::ADMMBipartiteGraph, edgeData::Dict{String, EdgeData}, rho::Float64)
+        ProximalMappingSolver(nodeID::String, admmGraph::ADMMBipartiteGraph, edgeData::Dict{String, EdgeData}, rho::Float64, logLevel::Int64)
 
     Construct a proximal mapping solver for the specified ADMM node.
 
@@ -106,7 +106,8 @@ mutable struct ProximalMappingSolver <: SpecializedOriginalADMMSubproblemSolver
     function ProximalMappingSolver(nodeID::String, 
         admmGraph::ADMMBipartiteGraph, 
         edgeData::Dict{String, EdgeData}, 
-        rho::Float64)
+        rho::Float64, 
+        logLevel::Int64)
 
         node = admmGraph.nodes[nodeID]
         @assert(isa(node.f, Zero), "ProximalMappingSolver only supports Zero as f.")
@@ -176,8 +177,8 @@ mutable struct ProximalMappingSolver <: SpecializedOriginalADMMSubproblemSolver
         end 
         
         initialValue .= 0.0
-        @info("OriginalADMMSubproblemSolve: ADMM node $nodeID initialized with ProximalMappingSolver.")
-        return new(scalingCoefficient, initialValue, rho, 1/(rho * scalingCoefficient^2))
+        @PDMOInfo logLevel "OriginalADMMSubproblemSolve: ADMM node $nodeID initialized with ProximalMappingSolver."
+        return new(scalingCoefficient, initialValue, rho, 1/(rho * scalingCoefficient^2), logLevel)
     end 
 end 
 

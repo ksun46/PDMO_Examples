@@ -121,12 +121,6 @@ Evaluate the transformed function f(x) = g(coe·x + translation).
 # Arguments
 - `x::NumericVariable`: Input point
 - `enableParallel::Bool=false`: Whether to enable parallel computation
-
-# Returns
-- Function value at the transformed input
-
-# Throws
-- `ErrorException`: If input and translation dimensions don't match
 """
 function (f::WrapperScalingTranslationFunction)(x::NumericVariable, enableParallel::Bool=false)
     if size(x) != size(f.translation)
@@ -178,12 +172,6 @@ Compute the gradient ∇f(x) = coe · ∇g(coe·x + translation).
 - `f::WrapperScalingTranslationFunction`: The wrapped function
 - `x::NumericVariable`: Point at which to evaluate the gradient
 - `enableParallel::Bool=false`: Whether to enable parallel computation
-
-# Returns
-- `NumericVariable`: The gradient vector/matrix
-
-# Throws
-- `ErrorException`: If original function is not smooth
 """
 function gradientOracle(f::WrapperScalingTranslationFunction, x::NumericVariable, enableParallel::Bool=false)
     if isSmooth(typeof(f.originalFunction)) == false
@@ -197,7 +185,6 @@ function gradientOracle(f::WrapperScalingTranslationFunction, x::NumericVariable
     gradientOracle!(y, f, x, enableParallel)
     return y
 end 
-
 """
     proximalOracle!(y::NumericVariable, f::WrapperScalingTranslationFunction, x::NumericVariable, gamma::Float64, enableParallel::Bool=false)
 
@@ -262,20 +249,6 @@ Returns: prox_{γf}(x) = (prox_{γ·coe², g}(translation + coe·x) - translatio
 - `x::NumericVariable`: Input point for the proximal operator
 - `gamma::Float64`: Proximal parameter
 - `enableParallel::Bool=false`: Whether to enable parallel computation
-
-# Returns
-- `NumericVariable`: Result of the proximal operator
-
-# Examples
-```julia
-# Proximal operator of scaled L2 ball: f(x) = I_{||2x||₂ ≤ 1}(x)
-g = IndicatorBallL2(1.0)
-f = WrapperScalingTranslationFunction(g, 2.0, 0.0)
-result = proximalOracle(f, [1.0, 1.0], 1.0)  # Projects onto scaled ball
-```
-
-# Throws
-- `ErrorException`: If original function doesn't have proximal operator
 """
 function proximalOracle(f::WrapperScalingTranslationFunction, x::NumericVariable, gamma::Float64, enableParallel::Bool=false)
     if isProximal(typeof(f.originalFunction)) == false
@@ -290,4 +263,45 @@ function proximalOracle(f::WrapperScalingTranslationFunction, x::NumericVariable
     y = similar(x)
     proximalOracle!(y, f, x, gamma, enableParallel)
     return y
+end
+
+# JuMP support
+isSupportedByJuMP(f::WrapperScalingTranslationFunction) = isSupportedByJuMP(f.originalFunction)
+
+# JuMP support
+function JuMPAddProximableFunction(g::WrapperScalingTranslationFunction, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    # Check if original function supports JuMP
+    if isSupportedByJuMP(g.originalFunction) == false
+        error("WrapperScalingTranslationFunction: original function $(typeof(g.originalFunction)) does not support JuMP")
+    end
+
+    if isProximal(g.originalFunction) == false
+        error("WrapperScalingTranslationFunction: original function $(typeof(g.originalFunction)) is not proximal")
+    end 
+
+    varTransformed = JuMP.@variable(model, [k = 1:length(var)])
+    for k in 1:length(var)
+        JuMP.@constraint(model, varTransformed[k] == g.coe * var[k] + g.translation[k])
+    end
+
+    return JuMPAddProximableFunction(g.originalFunction, model, varTransformed)
+end
+
+function JuMPAddSmoothFunction(f::WrapperScalingTranslationFunction, model::JuMP.Model, 
+    var::Vector{<:JuMP.VariableRef})
+    
+    # Check if original function supports JuMP and is smooth
+    if isSupportedByJuMP(f.originalFunction) == false
+        error("WrapperScalingTranslationFunction: original function $(typeof(f.originalFunction)) does not support JuMP")
+    end
+    if isSmooth(f.originalFunction) == false
+        error("WrapperScalingTranslationFunction: JuMPAddSmoothFunction called but original function is not smooth")
+    end
+    
+    varTransformed = JuMP.@variable(model, [k = 1:length(var)])
+    for k in 1:length(var)
+        JuMP.@constraint(model, varTransformed[k] == f.coe * var[k] + f.translation[k])
+    end
+
+    return JuMPAddSmoothFunction(f.originalFunction, model, varTransformed)
 end 

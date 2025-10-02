@@ -36,70 +36,6 @@ where a is the normal vector (slope) and b is the intercept.
 - **Distance from origin**: |intercept|/||slope|| when slope is normalized
 - **Projection**: Orthogonal projection onto the hyperplane
 
-# Internal Structure
-The constructor pre-computes:
-- `scaledSlope = slope / ||slope||²`: Normalized direction for efficient projection
-- Validation: slope vector cannot be zero or empty
-
-# Implementation Details
-- **Numerical stability**: Pre-computes normalized slope to avoid repeated divisions
-- **Efficient projection**: Uses pre-computed scaledSlope in proximal operator
-- **Tolerance handling**: Uses FeasTolerance for numerical feasibility checks
-- **Memory efficiency**: Minimal storage with pre-computed values
-
-# Examples
-```julia
-# Hyperplane x₁ + 2x₂ = 3
-slope = [1.0, 2.0]
-intercept = 3.0
-f = IndicatorHyperplane(slope, intercept)
-
-# Check if point is on hyperplane
-x_on = [1.0, 1.0]  # 1*1 + 2*1 = 3 ✓
-val = f(x_on)  # Returns 0.0
-
-x_off = [0.0, 0.0]  # 1*0 + 2*0 = 0 ≠ 3 ✗
-val = f(x_off)  # Returns +∞
-
-# Project point onto hyperplane
-x = [2.0, 3.0]  # Not on hyperplane: 1*2 + 2*3 = 8 ≠ 3
-x_proj = proximalOracle(f, x)  # Projects x onto hyperplane
-
-# Verify projection is on hyperplane
-@assert abs(dot(slope, x_proj) - intercept) < 1e-10
-
-# 2D example: line x - y = 1
-f_line = IndicatorHyperplane([1.0, -1.0], 1.0)
-x = [0.0, 0.0]
-x_proj = proximalOracle(f_line, x)  # Projects to line x - y = 1
-
-# 3D example: plane x + y + z = 1
-f_plane = IndicatorHyperplane([1.0, 1.0, 1.0], 1.0)
-x = [2.0, 2.0, 2.0]
-x_proj = proximalOracle(f_plane, x)  # Projects to plane
-```
-
-# Algorithm Applications
-- **Equality constraints**: Represent linear equality constraints in optimization
-- **Projection methods**: Project iterates onto constraint hyperplanes
-- **ADMM**: Enforce linear equality constraints
-- **Feasibility problems**: Find points satisfying linear equations
-- **Method of alternating projections**: Between multiple hyperplanes
-- **Linear programming**: Represent equality constraints
-- **Support vector machines**: Separating hyperplanes
-
-# Optimization Context
-Commonly appears in constrained optimization:
-```julia
-minimize f(x)
-subject to ⟨a,x⟩ = b  # Represented by IndicatorHyperplane
-```
-
-Or in penalty/augmented Lagrangian methods:
-```julia
-minimize f(x) + (μ/2)||⟨a,x⟩ - b||² + IndicatorHyperplane(a,b)(x)
-```
-
 # Projection Formula
 The projection of point x onto hyperplane H = {z : ⟨a,z⟩ = b} is:
 ```
@@ -126,8 +62,6 @@ This formula:
 - **Half-space**: Related to ⟨a,x⟩ ≤ b constraints
 - **Box constraints**: Coordinate hyperplanes form box constraint boundaries
 - **Polytopes**: Intersection of multiple hyperplanes and half-spaces
-
-
 """
 struct IndicatorHyperplane <: AbstractFunction 
     slope::Vector{Float64}
@@ -153,6 +87,7 @@ end
 isProximal(::Type{IndicatorHyperplane}) = true 
 isConvex(::Type{IndicatorHyperplane}) = true
 isSet(::Type{IndicatorHyperplane}) = true
+isSupportedByJuMP(f::Type{<:IndicatorHyperplane}) = true
 
 # function value
 function (f::IndicatorHyperplane)(x::NumericVariable, enableParallel::Bool=false)
@@ -177,3 +112,15 @@ function proximalOracle(f::IndicatorHyperplane, x::NumericVariable, gamma::Float
     proximalOracle!(y, f, x, gamma, enableParallel)
     return y
 end
+
+# JuMP support
+function JuMPAddProximableFunction(g::IndicatorHyperplane, model::JuMP.Model, var::Vector{<:JuMP.VariableRef})
+    @assert length(var) == length(g.slope) "Variable dimension must match hyperplane slope dimension"
+    
+    # Add hyperplane constraint: slope' * x = intercept
+    JuMP.@constraint(model, dot(g.slope, var) == g.intercept)
+    
+    return nothing  # Hyperplane constraints don't contribute to objective
+end
+
+
