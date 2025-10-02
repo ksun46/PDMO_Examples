@@ -51,11 +51,11 @@ More specifically,
 
 - **Adaptive Primal-Dual Method (AdaPDM)**
   - A suite of efficient and adaptive methods for problems with simpler coupling.
-  ```math 
-  \begin{aligned}
-  \min_{\mathbf{x}} \quad & \sum_{j=1}^{n-1} \left( f_j(x_j) + g_j(x_j) \right) + g_n(\mathbf{A}_{1,1}x_1 + \cdots + \mathbf{A}_{1,n-1}x_{n-1})
-  \end{aligned}
-  ```
+    ```math 
+    \begin{aligned}
+    \min_{\mathbf{x}} \quad & \sum_{j=1}^{n-1} \left( f_j(x_j) + g_j(x_j) \right) + g_n(\mathbf{A}_{1,1}x_1 + \cdots + \mathbf{A}_{1,n-1}x_{n-1})
+    \end{aligned}
+    ```
   - Various methods can be selected : 
     - Original Condat-Vũ Method (Condat 2013, Vũ 2013)
     - Adaptive Primal-Dual Method & Plus (Latafat et al. 2024)
@@ -65,13 +65,13 @@ More specifically,
     - A suite of classic methods for problems without constraints, i.e., $m=0$. 
     ```math 
     \begin{aligned}
-    \min_{\mathbf{x}} \quad & F(\mathbf{x}) + \sum_{j=1}^{n} \left( f_j(x_j) + g_j(x_j) \right) 
+    \min_{\mathbf{x}} \quad & \sum_{j=1}^{n-1} \left( f_j(x_j) + g_j(x_j) \right) + g_n(\mathbf{A}_{1,1}x_1 + \cdots + \mathbf{A}_{1,n-1}x_{n-1})
     \end{aligned}
     ```
     - Various subproblem solvers can be selected (Xu and Yin 2013):
-        - Original BCD Subproblem Solver
-        - Proximal BCD Subproblem Solver
-        - Prox-linear BCD Subproblem Solver
+      - Original BCD Subproblem Solver
+      - Proximal BCD Subproblem Solver
+      - Prox-linear BCD Subproblem Solver
 
 ## Key Features 
 - 🧱 **Unified Modeling**: A versatile interface for structured problems.
